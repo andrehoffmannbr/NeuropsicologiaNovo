@@ -4,6 +4,11 @@ import router from './utils/router.js'
 import toast from './components/toast.js'
 import App from './App.js'
 
+// TESTE IMEDIATO - DEVE APARECER SEMPRE
+console.log('🚨 TESTE IMEDIATO - MAIN.JS CARREGADO!');
+console.log('🚨 Timestamp:', new Date().toLocaleString());
+alert('🚨 TESTE: Main.js carregado com sucesso!');
+
 class Main {
   constructor() {
     this.app = null
@@ -67,6 +72,9 @@ class Main {
       
       console.log('🚀 Sistema de Neuropsicologia iniciado com sucesso!')
       
+      // FORÇAR ADIÇÃO DA ABA COLABORADORES
+      this.forceAddColaboradoresTab();
+      
       // Forçar renderização das tabs após 2 segundos
       setTimeout(() => {
         console.log('🔧 FORÇANDO RENDERIZAÇÃO DAS TABS');
@@ -88,6 +96,34 @@ class Main {
       console.error('❌ Stack trace:', error.stack)
       toast.error('Erro ao iniciar o sistema. Verifique sua conexão.')
     }
+  }
+
+  forceAddColaboradoresTab() {
+    console.log('🔧 FORÇANDO ADIÇÃO DA ABA COLABORADORES');
+    
+    setTimeout(() => {
+      const navTabs = document.querySelector('#nav-tabs');
+      console.log('🔧 Nav tabs encontrado:', navTabs);
+      
+      if (navTabs) {
+        const colaboradoresTab = `
+          <button class="nav-tab" data-section="colaboradores">
+            <i data-lucide="users-cog"></i>
+            <span class="nav-tab-text">Colaboradores</span>
+          </button>
+        `;
+        
+        navTabs.insertAdjacentHTML('beforeend', colaboradoresTab);
+        console.log('🔧 Aba colaboradores adicionada manualmente!');
+        
+        // Reinicializar os ícones
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      } else {
+        console.log('🔧 Nav tabs não encontrado');
+      }
+    }, 1000);
   }
 
   removeInitialLoading() {
