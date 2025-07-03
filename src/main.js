@@ -12,6 +12,9 @@ class Main {
 
   async init() {
     try {
+      console.log('🚀 MAIN.JS CARREGADO - Timestamp:', new Date().toISOString());
+      console.log('🔧 authService definido:', !!authService);
+      
       // Aguardar carregamento completo do DOM
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => this.start())
@@ -26,6 +29,8 @@ class Main {
 
   async start() {
     try {
+      console.log('🔧 DOM CARREGADO - Iniciando App');
+      
       // Inicializar Lucide icons
       if (window.lucide) {
         window.lucide.createIcons()
@@ -33,6 +38,8 @@ class Main {
 
       // Verificar usuário autenticado
       const currentUser = await authService.getCurrentUser()
+      console.log('🔧 Usuário atual:', currentUser)
+      console.log('🔧 Role do usuário:', authService.getUserRole())
       
       // Inicializar roteador
       router.init()
@@ -41,10 +48,27 @@ class Main {
       this.app = new App()
       await this.app.init()
       
+      console.log('🔧 APP INICIALIZADO - App:', this.app);
+      console.log('🔧 Layout atual:', this.app.layout);
+      
+      // Expor app globalmente para debug
+      window.app = this.app;
+      
       // Remover loading inicial
       this.removeInitialLoading()
       
       console.log('🚀 Sistema de Neuropsicologia iniciado com sucesso!')
+      
+      // Forçar renderização das tabs após 2 segundos
+      setTimeout(() => {
+        console.log('🔧 FORÇANDO RENDERIZAÇÃO DAS TABS');
+        if (this.app.layout) {
+          console.log('🔧 Layout existe, forçando renderNavigationTabs');
+          this.app.layout.renderNavigationTabs();
+        } else {
+          console.log('🔧 Layout não existe ainda');
+        }
+      }, 2000);
       
     } catch (error) {
       console.error('Erro ao iniciar aplicação:', error)
@@ -80,9 +104,4 @@ window.addEventListener('unhandledrejection', (event) => {
 // Adicionar utilitários globais para desenvolvimento E debug em produção
 window.authService = authService
 window.router = router
-window.toast = toast
-
-// Log adicional para debug
-console.log('🔧 AuthService exposto globalmente para debug:', window.authService)
-console.log('🔧 Usuário atual:', authService.currentUser)
-console.log('🔧 Role do usuário:', authService.getUserRole()) 
+window.toast = toast 
