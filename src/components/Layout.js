@@ -131,6 +131,8 @@ export default class Layout {
   }
 
   getTabsForRole(role) {
+    console.log('🔧 DEBUG Layout - Role recebido:', role);
+    
     const allTabs = [
       { section: 'clients', icon: 'user-plus', label: 'Cadastrar Cliente' },
       { section: 'appointments', icon: 'calendar', label: 'Agenda do Dia' },
@@ -143,8 +145,16 @@ export default class Layout {
       { section: 'colaboradores', icon: 'users-cog', label: 'Colaboradores' }
     ]
 
-    // Filtrar abas baseado nas permissões
-    return allTabs.filter(tab => {
+    console.log('🔧 DEBUG Layout - Todas as tabs:', allTabs);
+
+    // TEMPORÁRIO: Forçar exibição de todas as abas para debug
+    if (role === 'coordinator' || role === 'staff' || role === 'intern' || !role) {
+      console.log('🔧 DEBUG Layout - Mostrando todas as abas (DEBUG MODE)');
+      return allTabs; // Mostrar todas as abas temporariamente
+    }
+
+    // Filtrar abas baseado nas permissões (código original)
+    const filteredTabs = allTabs.filter(tab => {
       if (role === 'coordinator') {
         return true // Coordenador vê todas as abas
       } else if (role === 'staff') {
@@ -153,7 +163,10 @@ export default class Layout {
         return ['appointments', 'all-clients'].includes(tab.section)
       }
       return false
-    })
+    });
+
+    console.log('🔧 DEBUG Layout - Tabs filtradas:', filteredTabs);
+    return filteredTabs;
   }
 
   updateActiveTab() {
