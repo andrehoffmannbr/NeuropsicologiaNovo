@@ -11,6 +11,9 @@ export default class ClientsPage {
   }
 
   async render(container) {
+    console.log('🔧 ClientsPage - render chamado');
+    console.log('🔧 ClientsPage - container:', container);
+    
     this.element = document.createElement('div')
     this.element.className = 'clients-page'
     
@@ -18,6 +21,9 @@ export default class ClientsPage {
     const urlParams = new URLSearchParams(window.location.search)
     this.clientId = urlParams.get('id')
     this.isEditing = !!this.clientId
+    
+    console.log('🔧 ClientsPage - isEditing:', this.isEditing);
+    console.log('🔧 ClientsPage - clientId:', this.clientId);
 
     this.element.innerHTML = `
       <div class="page-header">
@@ -114,25 +120,45 @@ export default class ClientsPage {
       </div>
     `
 
+    console.log('🔧 ClientsPage - HTML criado');
+    
     container.appendChild(this.element)
+    
+    console.log('🔧 ClientsPage - Elemento adicionado ao container');
     
     // Inicializar funcionalidades
     this.initializeEvents()
     
+    console.log('🔧 ClientsPage - Eventos inicializados');
+    
     // Carregar dados se estiver editando
     if (this.isEditing) {
+      console.log('🔧 ClientsPage - Carregando dados do cliente para edição');
       await this.loadClientData()
     }
+    
+    console.log('🔧 ClientsPage - Render concluído');
   }
 
   initializeEvents() {
+    console.log('🔧 ClientsPage - initializeEvents chamado');
+    
     const form = this.element.querySelector('#clientForm')
+    console.log('🔧 ClientsPage - form encontrado:', form);
+    
+    if (!form) {
+      console.error('❌ ClientsPage - Formulário não encontrado!');
+      return;
+    }
     
     // Submit do formulário
     form.addEventListener('submit', async (e) => {
+      console.log('🔧 ClientsPage - Submit do formulário');
       e.preventDefault()
       await this.handleSubmit()
     })
+    
+    console.log('🔧 ClientsPage - Event listeners adicionados');
   }
 
   async loadClientData() {

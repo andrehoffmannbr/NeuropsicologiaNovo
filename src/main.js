@@ -30,10 +30,15 @@ class Main {
   async start() {
     try {
       console.log('🔧 DOM CARREGADO - Iniciando App');
+      console.log('🔧 Document readyState:', document.readyState);
+      console.log('🔧 Container app:', document.getElementById('app'));
       
       // Inicializar Lucide icons
       if (window.lucide) {
+        console.log('🔧 Lucide disponível');
         window.lucide.createIcons()
+      } else {
+        console.log('⚠️ Lucide NÃO disponível');
       }
 
       // Verificar usuário autenticado
@@ -43,9 +48,12 @@ class Main {
       
       // Inicializar roteador
       router.init()
+      console.log('🔧 Router inicializado');
       
       // Inicializar aplicação
       this.app = new App()
+      console.log('🔧 App criado:', this.app);
+      
       await this.app.init()
       
       console.log('🔧 APP INICIALIZADO - App:', this.app);
@@ -62,16 +70,22 @@ class Main {
       // Forçar renderização das tabs após 2 segundos
       setTimeout(() => {
         console.log('🔧 FORÇANDO RENDERIZAÇÃO DAS TABS');
+        console.log('🔧 App layout existe:', !!this.app.layout);
         if (this.app.layout) {
           console.log('🔧 Layout existe, forçando renderNavigationTabs');
-          this.app.layout.renderNavigationTabs();
+          try {
+            this.app.layout.renderNavigationTabs();
+          } catch (error) {
+            console.error('🔧 Erro ao renderizar tabs:', error);
+          }
         } else {
           console.log('🔧 Layout não existe ainda');
         }
       }, 2000);
       
     } catch (error) {
-      console.error('Erro ao iniciar aplicação:', error)
+      console.error('❌ Erro ao iniciar aplicação:', error)
+      console.error('❌ Stack trace:', error.stack)
       toast.error('Erro ao iniciar o sistema. Verifique sua conexão.')
     }
   }
