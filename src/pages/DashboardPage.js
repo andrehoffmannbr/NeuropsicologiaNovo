@@ -2,6 +2,7 @@ import dashboardService from '../services/dashboard.js'
 import toast from '../components/toast.js'
 import router, { ROUTES } from '../utils/router.js'
 import authService from '../services/auth.js'
+import supabase from '../config/supabase.js'
 
 export default class DashboardPage {
   constructor() {
@@ -624,18 +625,26 @@ export default class DashboardPage {
   }
 
   renderFinancialSection() {
+    // Verificar se os dados do dashboard estão carregados
+    if (!this.dashboardData || !this.dashboardData.stats) {
+      this.element.innerHTML = `
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Controle Financeiro</h2>
+          <p class="dashboard-subtitle">Carregando dados...</p>
+        </div>
+        <div class="loading-spinner"></div>
+      `
+      return
+    }
+
     this.element.innerHTML = `
       <div class="dashboard-header">
-        <h2 class="dashboard-title">Financeiro</h2>
-        <p class="dashboard-subtitle">Controle financeiro da clínica</p>
+        <h2 class="dashboard-title">Controle Financeiro</h2>
+        <p class="dashboard-subtitle">Gerencie receitas e despesas</p>
       </div>
 
       <div class="financial-section">
         <div class="section-actions">
-          <button class="btn btn-primary" id="btn-new-transaction">
-            <i data-lucide="plus"></i>
-            Nova Transação
-          </button>
           <button class="btn btn-secondary" id="btn-back-overview-financial">
             <i data-lucide="arrow-left"></i>
             Voltar ao Dashboard
@@ -657,12 +666,62 @@ export default class DashboardPage {
           </div>
         </div>
 
-        <div class="financial-actions">
-          <p>Para gestão financeira completa:</p>
-          <button class="btn btn-outline" id="btn-open-financial">
-            <i data-lucide="external-link"></i>
-            Abrir Módulo Financeiro
-          </button>
+        <div class="financial-form">
+          <h3>Nova Transação</h3>
+          <form id="financial-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Tipo</label>
+                <select name="transaction_type" required>
+                  <option value="">Selecione</option>
+                  <option value="receita">Receita</option>
+                  <option value="despesa">Despesa</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Categoria</label>
+                <select name="category" required>
+                  <option value="">Selecione</option>
+                  <option value="Consulta">Consulta</option>
+                  <option value="Avaliação">Avaliação</option>
+                  <option value="Material">Material</option>
+                  <option value="Aluguel">Aluguel</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Descrição</label>
+                <input type="text" name="description" required>
+              </div>
+              <div class="form-group">
+                <label>Valor</label>
+                <input type="number" name="amount" step="0.01" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Forma de Pagamento</label>
+                <select name="payment_method">
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="cartao">Cartão</option>
+                  <option value="pix">PIX</option>
+                  <option value="transferencia">Transferência</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select name="payment_status">
+                  <option value="pendente">Pendente</option>
+                  <option value="pago">Pago</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-outline" id="clear-financial-form">Limpar</button>
+              <button type="submit" class="btn btn-primary">Salvar Transação</button>
+            </div>
+          </form>
         </div>
       </div>
     `
@@ -671,15 +730,9 @@ export default class DashboardPage {
   }
 
   setupFinancialEventListeners() {
-    const btnNewTransaction = this.element.querySelector('#btn-new-transaction')
     const btnBackOverview = this.element.querySelector('#btn-back-overview-financial')
-    const btnOpenFinancial = this.element.querySelector('#btn-open-financial')
-
-    if (btnNewTransaction) {
-      btnNewTransaction.addEventListener('click', () => {
-        router.navigateTo(ROUTES.FINANCIAL)
-      })
-    }
+    const form = this.element.querySelector('#financial-form')
+    const clearBtn = this.element.querySelector('#clear-financial-form')
 
     if (btnBackOverview) {
       btnBackOverview.addEventListener('click', () => {
@@ -689,10 +742,41 @@ export default class DashboardPage {
       })
     }
 
-    if (btnOpenFinancial) {
-      btnOpenFinancial.addEventListener('click', () => {
-        router.navigateTo(ROUTES.FINANCIAL)
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        this.saveTransaction(form)
       })
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        form.reset()
+      })
+    }
+  }
+
+  async saveTransaction(form) {
+    try {
+      const formData = new FormData(form)
+      const transactionData = Object.fromEntries(formData)
+      
+      // Adicionar dados do usuário logado
+      const currentUser = await authService.getCurrentUser()
+      transactionData.created_by = currentUser.id
+      
+      const { error } = await supabase
+        .from('financial_transactions')
+        .insert([transactionData])
+
+      if (error) throw error
+
+      toast.success('Transação salva com sucesso!')
+      form.reset()
+      await this.loadDashboardData()
+    } catch (error) {
+      console.error('Erro ao salvar transação:', error)
+      toast.error('Erro ao salvar transação')
     }
   }
 
@@ -705,10 +789,6 @@ export default class DashboardPage {
 
       <div class="inventory-section">
         <div class="section-actions">
-          <button class="btn btn-primary" id="btn-new-inventory-item">
-            <i data-lucide="package-plus"></i>
-            Novo Item
-          </button>
           <button class="btn btn-secondary" id="btn-back-overview-inventory">
             <i data-lucide="arrow-left"></i>
             Voltar ao Dashboard
@@ -730,12 +810,60 @@ export default class DashboardPage {
           </div>
         </div>
 
-        <div class="inventory-actions">
-          <p>Para controle completo do estoque:</p>
-          <button class="btn btn-outline" id="btn-open-inventory">
-            <i data-lucide="external-link"></i>
-            Abrir Módulo de Estoque
-          </button>
+        <div class="inventory-form">
+          <h3>Novo Item de Estoque</h3>
+          <form id="inventory-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nome do Item</label>
+                <input type="text" name="name" required>
+              </div>
+              <div class="form-group">
+                <label>Categoria</label>
+                <select name="category" required>
+                  <option value="">Selecione</option>
+                  <option value="Material de Escritório">Material de Escritório</option>
+                  <option value="Material Clínico">Material Clínico</option>
+                  <option value="Equipamentos">Equipamentos</option>
+                  <option value="Limpeza">Limpeza</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Descrição</label>
+                <input type="text" name="description">
+              </div>
+              <div class="form-group">
+                <label>Quantidade</label>
+                <input type="number" name="quantity" required min="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Estoque Mínimo</label>
+                <input type="number" name="minimum_stock" min="0" value="0">
+              </div>
+              <div class="form-group">
+                <label>Preço Unitário</label>
+                <input type="number" name="unit_price" step="0.01" min="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fornecedor</label>
+                <input type="text" name="supplier">
+              </div>
+              <div class="form-group">
+                <label>Localização</label>
+                <input type="text" name="location">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-outline" id="clear-inventory-form">Limpar</button>
+              <button type="submit" class="btn btn-primary">Salvar Item</button>
+            </div>
+          </form>
         </div>
       </div>
     `
@@ -744,15 +872,9 @@ export default class DashboardPage {
   }
 
   setupInventoryEventListeners() {
-    const btnNewItem = this.element.querySelector('#btn-new-inventory-item')
     const btnBackOverview = this.element.querySelector('#btn-back-overview-inventory')
-    const btnOpenInventory = this.element.querySelector('#btn-open-inventory')
-
-    if (btnNewItem) {
-      btnNewItem.addEventListener('click', () => {
-        router.navigateTo(ROUTES.INVENTORY)
-      })
-    }
+    const form = this.element.querySelector('#inventory-form')
+    const clearBtn = this.element.querySelector('#clear-inventory-form')
 
     if (btnBackOverview) {
       btnBackOverview.addEventListener('click', () => {
@@ -762,10 +884,40 @@ export default class DashboardPage {
       })
     }
 
-    if (btnOpenInventory) {
-      btnOpenInventory.addEventListener('click', () => {
-        router.navigateTo(ROUTES.INVENTORY)
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        this.saveInventoryItem(form)
       })
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        form.reset()
+      })
+    }
+  }
+
+  async saveInventoryItem(form) {
+    try {
+      const formData = new FormData(form)
+      const itemData = Object.fromEntries(formData)
+      
+      // Adicionar dados do usuário logado
+      const currentUser = await authService.getCurrentUser()
+      itemData.created_by = currentUser.id
+      
+      const { error } = await supabase
+        .from('inventory_items')
+        .insert([itemData])
+
+      if (error) throw error
+
+      toast.success('Item de estoque salvo com sucesso!')
+      form.reset()
+    } catch (error) {
+      console.error('Erro ao salvar item:', error)
+      toast.error('Erro ao salvar item de estoque')
     }
   }
 
@@ -778,10 +930,6 @@ export default class DashboardPage {
 
       <div class="interns-section">
         <div class="section-actions">
-          <button class="btn btn-primary" id="btn-new-intern">
-            <i data-lucide="user-plus"></i>
-            Novo Estagiário
-          </button>
           <button class="btn btn-secondary" id="btn-back-overview-interns">
             <i data-lucide="arrow-left"></i>
             Voltar ao Dashboard
@@ -799,12 +947,56 @@ export default class DashboardPage {
           </div>
         </div>
 
-        <div class="interns-actions">
-          <p>Para gestão completa de estagiários:</p>
-          <button class="btn btn-outline" id="btn-open-interns">
-            <i data-lucide="external-link"></i>
-            Abrir Módulo de Estagiários
-          </button>
+        <div class="supervision-form">
+          <h3>Agendar Supervisão</h3>
+          <form id="supervision-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Estagiário</label>
+                <select name="intern_id" id="intern-select" required>
+                  <option value="">Selecione um estagiário</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Supervisor</label>
+                <select name="supervisor_id" id="supervisor-select" required>
+                  <option value="">Selecione um supervisor</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Data da Supervisão</label>
+                <input type="date" name="session_date" required>
+              </div>
+              <div class="form-group">
+                <label>Horário</label>
+                <input type="time" name="session_time" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Duração (minutos)</label>
+                <input type="number" name="duration_minutes" value="60" min="15" max="240">
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                  <option value="agendado">Agendado</option>
+                  <option value="realizado">Realizado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Tópicos a Discutir</label>
+              <textarea name="topics" rows="3" placeholder="Casos, dúvidas, objetivos da supervisão..."></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-outline" id="clear-supervision-form">Limpar</button>
+              <button type="submit" class="btn btn-primary">Agendar Supervisão</button>
+            </div>
+          </form>
         </div>
       </div>
     `
@@ -812,16 +1004,10 @@ export default class DashboardPage {
     this.setupInternsEventListeners()
   }
 
-  setupInternsEventListeners() {
-    const btnNewIntern = this.element.querySelector('#btn-new-intern')
+  async setupInternsEventListeners() {
     const btnBackOverview = this.element.querySelector('#btn-back-overview-interns')
-    const btnOpenInterns = this.element.querySelector('#btn-open-interns')
-
-    if (btnNewIntern) {
-      btnNewIntern.addEventListener('click', () => {
-        router.navigateTo(ROUTES.INTERNS)
-      })
-    }
+    const form = this.element.querySelector('#supervision-form')
+    const clearBtn = this.element.querySelector('#clear-supervision-form')
 
     if (btnBackOverview) {
       btnBackOverview.addEventListener('click', () => {
@@ -831,10 +1017,68 @@ export default class DashboardPage {
       })
     }
 
-    if (btnOpenInterns) {
-      btnOpenInterns.addEventListener('click', () => {
-        router.navigateTo(ROUTES.INTERNS)
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        this.saveSupervision(form)
       })
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        form.reset()
+      })
+    }
+
+    // Carregar supervisores (usuários com role coordinator/staff)
+    await this.loadSupervisors()
+  }
+
+  async loadSupervisors() {
+    try {
+      const { data: users, error } = await supabase
+        .from('user_profiles')
+        .select('id, name, role')
+        .in('role', ['coordinator', 'staff'])
+
+      if (error) throw error
+
+      const supervisorSelect = this.element.querySelector('#supervisor-select')
+      if (supervisorSelect && users) {
+        supervisorSelect.innerHTML = '<option value="">Selecione um supervisor</option>' +
+          users.map(user => `<option value="${user.id}">${user.name} (${user.role})</option>`).join('')
+      }
+
+      // Para estagiários, seria necessário ter dados na tabela user_profiles
+      const internSelect = this.element.querySelector('#intern-select')
+      if (internSelect) {
+        internSelect.innerHTML = '<option value="">Selecione um estagiário</option><option value="intern1">Estagiário de Exemplo</option>'
+      }
+    } catch (error) {
+      console.error('Erro ao carregar supervisores:', error)
+    }
+  }
+
+  async saveSupervision(form) {
+    try {
+      const formData = new FormData(form)
+      const supervisionData = Object.fromEntries(formData)
+      
+      // Adicionar dados do usuário logado
+      const currentUser = await authService.getCurrentUser()
+      supervisionData.created_by = currentUser.id
+      
+      const { error } = await supabase
+        .from('supervision_sessions')
+        .insert([supervisionData])
+
+      if (error) throw error
+
+      toast.success('Supervisão agendada com sucesso!')
+      form.reset()
+    } catch (error) {
+      console.error('Erro ao agendar supervisão:', error)
+      toast.error('Erro ao agendar supervisão')
     }
   }
 
