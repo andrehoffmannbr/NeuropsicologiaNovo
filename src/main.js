@@ -77,9 +77,12 @@ window.addEventListener('unhandledrejection', (event) => {
   toast.error('Erro de conexão. Verifique sua internet.')
 })
 
-// Adicionar utilitários globais para desenvolvimento
-if (import.meta.env.DEV) {
-  window.authService = authService
-  window.router = router
-  window.toast = toast
-} 
+// Adicionar utilitários globais para desenvolvimento E debug em produção
+window.authService = authService
+window.router = router
+window.toast = toast
+
+// Log adicional para debug
+console.log('🔧 AuthService exposto globalmente para debug:', window.authService)
+console.log('🔧 Usuário atual:', authService.currentUser)
+console.log('🔧 Role do usuário:', authService.getUserRole()) 
