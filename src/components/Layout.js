@@ -98,8 +98,13 @@ export default class Layout {
   }
 
   updateUserInfo() {
+    console.log('🔧 DEBUG Layout - updateUserInfo chamado');
+    
     const userName = authService.getUserName()
     const userRole = authService.getUserRole()
+    
+    console.log('🔧 DEBUG Layout - userName:', userName);
+    console.log('🔧 DEBUG Layout - userRole:', userRole);
     
     const userNameEl = this.element.querySelector('#user-name')
     const userRoleEl = this.element.querySelector('#user-role')
@@ -116,11 +121,17 @@ export default class Layout {
   }
 
   renderNavigationTabs() {
+    console.log('🔧 DEBUG Layout - renderNavigationTabs chamado');
+    
     const navTabs = this.element.querySelector('#nav-tabs')
+    console.log('🔧 DEBUG Layout - navTabs element:', navTabs);
+    
     const userRole = authService.getUserRole()
+    console.log('🔧 DEBUG Layout - userRole antes de getTabsForRole:', userRole);
     
     // Define as abas baseadas no role do usuário
     const tabs = this.getTabsForRole(userRole)
+    console.log('🔧 DEBUG Layout - tabs retornadas:', tabs);
     
     navTabs.innerHTML = tabs.map(tab => `
       <button class="nav-tab" data-section="${tab.section}">
@@ -128,6 +139,8 @@ export default class Layout {
         <span class="nav-tab-text">${tab.label}</span>
       </button>
     `).join('')
+    
+    console.log('🔧 DEBUG Layout - HTML das tabs inserido:', navTabs.innerHTML);
   }
 
   getTabsForRole(role) {
