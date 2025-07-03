@@ -34,6 +34,11 @@ export default class Layout {
 
       <nav class="app-nav">
         <div class="nav-content">
+          <button class="nav-toggle" id="nav-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
           <div class="nav-tabs" id="nav-tabs">
             <!-- Tabs serão inseridas dinamicamente -->
           </div>
@@ -58,13 +63,25 @@ export default class Layout {
     const logoutBtn = this.element.querySelector('#logout-btn')
     logoutBtn.addEventListener('click', () => this.handleLogout())
 
-    // Navigation tabs
+    // Botão hambúrguer (mobile)
+    const navToggle = this.element.querySelector('#nav-toggle')
     const navTabs = this.element.querySelector('#nav-tabs')
+    
+    navToggle.addEventListener('click', () => {
+      navToggle.classList.toggle('active')
+      navTabs.classList.toggle('open')
+    })
+
+    // Fechar menu ao clicar em uma aba (mobile)
     navTabs.addEventListener('click', (e) => {
       const tab = e.target.closest('.nav-tab')
       if (tab) {
         const section = tab.dataset.section
         if (section) {
+          // Fechar menu mobile
+          navToggle.classList.remove('active')
+          navTabs.classList.remove('open')
+          
           // Navegar para o dashboard com seção específica
           this.currentSection = section
           router.navigateTo(ROUTES.DASHBOARD)
@@ -74,6 +91,14 @@ export default class Layout {
             detail: { section }
           }))
         }
+      }
+    })
+
+    // Fechar menu ao clicar fora (mobile)
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.nav-content') && navTabs.classList.contains('open')) {
+        navToggle.classList.remove('active')
+        navTabs.classList.remove('open')
       }
     })
 

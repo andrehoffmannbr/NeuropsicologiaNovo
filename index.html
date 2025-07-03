@@ -67,29 +67,42 @@
           color: white !important;
           display: flex !important;
           align-items: center !important;
-          gap: 8px !important;
-          padding: 8px 12px !important;
+          gap: 6px !important;
+          padding: 8px 10px !important;
           border: none !important;
           border-radius: 6px !important;
-          font-size: 12px !important;
-          font-weight: 500 !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
           cursor: pointer !important;
           transition: all 0.2s !important;
-          margin-left: 4px !important;
+          margin: 2px !important;
           white-space: nowrap !important;
           flex-shrink: 0 !important;
           min-width: auto !important;
+          border-bottom: 3px solid transparent !important;
         `;
         
         colaboradoresTab.innerHTML = `
-          <i data-lucide="users-cog" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
-          <span class="nav-tab-text" style="font-size: 12px;">Colaboradores</span>
+          <i data-lucide="users-cog" style="width: 12px; height: 12px; flex-shrink: 0;"></i>
+          <span class="nav-tab-text" style="font-size: 11px; font-weight: 600;">Colaboradores</span>
         `;
         
         // Adicionar evento de clique
         colaboradoresTab.addEventListener('click', function() {
           console.log('🚨 Aba colaboradores clicada!');
-          alert('Aba Colaboradores clicada! Funcionalidade em desenvolvimento.');
+          
+          // Fechar menu mobile se estiver aberto
+          var navToggle = document.querySelector('#nav-toggle');
+          var navTabs = document.querySelector('#nav-tabs');
+          if (navToggle && navTabs) {
+            navToggle.classList.remove('active');
+            navTabs.classList.remove('open');
+          }
+          
+          // Simular navegação
+          window.dispatchEvent(new CustomEvent('dashboard-section-change', {
+            detail: { section: 'colaboradores' }
+          }));
         });
         
         // Adicionar ao nav
