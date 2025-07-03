@@ -97,6 +97,18 @@ export default class DashboardPage {
   }
 
   renderOverview() {
+    // Verificar se os dados do dashboard estão carregados
+    if (!this.dashboardData) {
+      this.element.innerHTML = `
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Dashboard</h2>
+          <p class="dashboard-subtitle">Carregando dados...</p>
+        </div>
+        <div class="loading-spinner"></div>
+      `
+      return
+    }
+
     const { stats, todayAppointments, recentActivities } = this.dashboardData
 
     this.element.innerHTML = `
@@ -327,6 +339,18 @@ export default class DashboardPage {
   }
 
   renderAppointmentsSection() {
+    // Verificar se os dados do dashboard estão carregados
+    if (!this.dashboardData || !this.dashboardData.todayAppointments) {
+      this.element.innerHTML = `
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Agenda do Dia</h2>
+          <p class="dashboard-subtitle">Carregando dados...</p>
+        </div>
+        <div class="loading-spinner"></div>
+      `
+      return
+    }
+
     this.element.innerHTML = `
       <div class="dashboard-header">
         <h2 class="dashboard-title">Agenda do Dia</h2>
@@ -410,6 +434,18 @@ export default class DashboardPage {
   }
 
   renderAllClientsSection() {
+    // Verificar se os dados do dashboard estão carregados
+    if (!this.dashboardData || !this.dashboardData.stats) {
+      this.element.innerHTML = `
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Todos os Pacientes</h2>
+          <p class="dashboard-subtitle">Carregando dados...</p>
+        </div>
+        <div class="loading-spinner"></div>
+      `
+      return
+    }
+
     this.element.innerHTML = `
       <div class="dashboard-header">
         <h2 class="dashboard-title">Todos os Pacientes</h2>
@@ -483,6 +519,18 @@ export default class DashboardPage {
   }
 
   renderReportsSection() {
+    // Verificar se os dados do dashboard estão carregados
+    if (!this.dashboardData || !this.dashboardData.stats) {
+      this.element.innerHTML = `
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Relatórios de Clientes</h2>
+          <p class="dashboard-subtitle">Carregando dados...</p>
+        </div>
+        <div class="loading-spinner"></div>
+      `
+      return
+    }
+
     this.element.innerHTML = `
       <div class="dashboard-header">
         <h2 class="dashboard-title">Relatórios de Clientes</h2>
