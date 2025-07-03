@@ -94,6 +94,9 @@ export default class DashboardPage {
       case 'interns':
         this.renderInternsSection()
         break
+      case 'colaboradores':
+        this.renderColaboradoresSection()
+        break
     }
   }
 
@@ -1565,6 +1568,414 @@ export default class DashboardPage {
     } catch (error) {
       console.error('Erro ao agendar supervisão:', error)
       toast.error('Erro ao agendar supervisão')
+    }
+  }
+
+  renderColaboradoresSection() {
+    this.element.innerHTML = `
+      <div class="section-header">
+        <button class="btn btn-outline" id="btn-back-overview-colaboradores">
+          <i data-lucide="arrow-left"></i>
+          Voltar
+        </button>
+        <h2>Gestão de Colaboradores</h2>
+        <p>Cadastre e gerencie colaboradores do sistema</p>
+      </div>
+
+      <div class="colaboradores-container">
+        <div class="colaboradores-tabs">
+          <button class="tab-btn active" id="tab-colaboradores-form">Cadastrar Colaborador</button>
+          <button class="tab-btn" id="tab-colaboradores-list">Gerenciar Colaboradores</button>
+        </div>
+
+        <!-- SEÇÃO CADASTRO -->
+        <div class="colaboradores-form-section" id="colaboradores-form-section">
+          <div class="form-card">
+            <h3>Cadastrar Novo Colaborador</h3>
+            <form id="colaborador-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome Completo *</label>
+                  <input type="text" name="nome" required placeholder="Digite o nome completo">
+                </div>
+                <div class="form-group">
+                  <label>E-mail *</label>
+                  <input type="email" name="email" required placeholder="email@exemplo.com">
+                </div>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Telefone</label>
+                  <input type="tel" name="telefone" placeholder="(11) 99999-9999">
+                </div>
+                <div class="form-group">
+                  <label>Senha Temporária *</label>
+                  <input type="password" name="senha" required placeholder="Mínimo 6 caracteres" minlength="6">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Cargo Inicial</label>
+                <select name="cargo" disabled>
+                  <option value="estagiario">Estagiário (padrão)</option>
+                </select>
+                <small>Novos colaboradores sempre começam como estagiários</small>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-outline" id="clear-colaborador-form">Limpar</button>
+                <button type="submit" class="btn btn-primary">Cadastrar Colaborador</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- SEÇÃO LISTAGEM -->
+        <div class="colaboradores-list-section" id="colaboradores-list-section" style="display: none;">
+          <div class="listagem-header">
+            <h3>Colaboradores Cadastrados</h3>
+            <div class="filtros">
+              <select id="filtro-cargo">
+                <option value="">Todos os cargos</option>
+                <option value="estagiario">Estagiários</option>
+                <option value="funcionario">Funcionários</option>
+                <option value="coordenador">Coordenadores</option>
+              </select>
+              <input type="text" id="busca-nome" placeholder="Buscar por nome..." class="search-input">
+            </div>
+          </div>
+
+          <div class="colaboradores-stats">
+            <div class="stat-card">
+              <h4 id="total-colaboradores">0</h4>
+              <p>Total</p>
+            </div>
+            <div class="stat-card">
+              <h4 id="total-estagiarios">0</h4>
+              <p>Estagiários</p>
+            </div>
+            <div class="stat-card">
+              <h4 id="total-funcionarios">0</h4>
+              <p>Funcionários</p>
+            </div>
+            <div class="stat-card">
+              <h4 id="total-coordenadores">0</h4>
+              <p>Coordenadores</p>
+            </div>
+          </div>
+
+          <div class="colaboradores-lista" id="colaboradores-lista">
+            <div class="loading-spinner">Carregando colaboradores...</div>
+          </div>
+        </div>
+      </div>
+    `
+
+    this.setupColaboradoresEventListeners()
+  }
+
+  async setupColaboradoresEventListeners() {
+    const btnBackOverview = this.element.querySelector('#btn-back-overview-colaboradores')
+    const form = this.element.querySelector('#colaborador-form')
+    const clearBtn = this.element.querySelector('#clear-colaborador-form')
+    const tabForm = this.element.querySelector('#tab-colaboradores-form')
+    const tabList = this.element.querySelector('#tab-colaboradores-list')
+    const filtroCargo = this.element.querySelector('#filtro-cargo')
+    const buscaNome = this.element.querySelector('#busca-nome')
+
+    if (btnBackOverview) {
+      btnBackOverview.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('dashboard-section-change', {
+          detail: { section: 'overview' }
+        }))
+      })
+    }
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        this.saveColaborador(form)
+      })
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        form.reset()
+      })
+    }
+
+    // Tabs navigation
+    if (tabForm) {
+      tabForm.addEventListener('click', () => {
+        this.switchColaboradoresTab('form')
+      })
+    }
+
+    if (tabList) {
+      tabList.addEventListener('click', () => {
+        this.switchColaboradoresTab('list')
+        this.loadColaboradores()
+      })
+    }
+
+    // Filtros
+    if (filtroCargo) {
+      filtroCargo.addEventListener('change', () => this.filterColaboradores())
+    }
+
+    if (buscaNome) {
+      buscaNome.addEventListener('input', () => this.filterColaboradores())
+    }
+  }
+
+  switchColaboradoresTab(tab) {
+    const formSection = this.element.querySelector('#colaboradores-form-section')
+    const listSection = this.element.querySelector('#colaboradores-list-section')
+    const tabForm = this.element.querySelector('#tab-colaboradores-form')
+    const tabList = this.element.querySelector('#tab-colaboradores-list')
+
+    if (tab === 'form') {
+      formSection.style.display = 'block'
+      listSection.style.display = 'none'
+      tabForm.classList.add('active')
+      tabList.classList.remove('active')
+    } else {
+      formSection.style.display = 'none'
+      listSection.style.display = 'block'
+      tabForm.classList.remove('active')
+      tabList.classList.add('active')
+    }
+  }
+
+  async loadColaboradores() {
+    try {
+      const { data: colaboradores, error } = await supabase
+        .from('colaboradores')
+        .select('*')
+        .eq('ativo', true)
+        .order('data_cadastro', { ascending: false })
+
+      if (error) throw error
+
+      this.renderColaboradoresList(colaboradores || [])
+      this.updateColaboradoresStats(colaboradores || [])
+
+    } catch (error) {
+      console.error('Erro ao carregar colaboradores:', error)
+      const lista = this.element.querySelector('#colaboradores-lista')
+      if (lista) {
+        lista.innerHTML = '<p class="error">Erro ao carregar colaboradores</p>'
+      }
+    }
+  }
+
+  renderColaboradoresList(colaboradores) {
+    const lista = this.element.querySelector('#colaboradores-lista')
+    if (!lista) return
+
+    if (colaboradores.length === 0) {
+      lista.innerHTML = '<p class="no-data">Nenhum colaborador encontrado</p>'
+      return
+    }
+
+    const currentUser = authService.getCurrentUser()
+    const currentUserId = currentUser?.id
+
+    lista.innerHTML = colaboradores.map(colaborador => `
+      <div class="colaborador-card" data-cargo="${colaborador.cargo}" data-nome="${colaborador.nome.toLowerCase()}">
+        <div class="colaborador-info">
+          <div class="colaborador-header">
+            <h4>${colaborador.nome}</h4>
+            <span class="cargo-badge cargo-${colaborador.cargo}">${this.formatCargo(colaborador.cargo)}</span>
+          </div>
+          <div class="colaborador-details">
+            <p><strong>E-mail:</strong> ${colaborador.email}</p>
+            <p><strong>Telefone:</strong> ${colaborador.telefone || 'Não informado'}</p>
+            <p><strong>Cadastrado em:</strong> ${new Date(colaborador.data_cadastro).toLocaleDateString('pt-BR')}</p>
+          </div>
+        </div>
+        
+        <div class="colaborador-actions">
+          ${colaborador.user_id !== currentUserId ? `
+            <div class="promocao-container">
+              <label>Promover para:</label>
+              <select class="promocao-select" data-colaborador-id="${colaborador.id}">
+                <option value="">Selecione...</option>
+                ${colaborador.cargo !== 'funcionario' ? '<option value="funcionario">Funcionário</option>' : ''}
+                ${colaborador.cargo !== 'coordenador' ? '<option value="coordenador">Coordenador</option>' : ''}
+                ${colaborador.cargo !== 'estagiario' ? '<option value="estagiario">Estagiário</option>' : ''}
+              </select>
+              <button class="btn btn-sm btn-primary promocao-btn" data-colaborador-id="${colaborador.id}">
+                <i data-lucide="arrow-up"></i>
+                Promover
+              </button>
+            </div>
+          ` : `
+            <span class="self-indicator">Você</span>
+          `}
+        </div>
+      </div>
+    `).join('')
+
+    // Adicionar event listeners para promoção
+    this.setupPromocaoEventListeners()
+  }
+
+  setupPromocaoEventListeners() {
+    const promocaoBtns = this.element.querySelectorAll('.promocao-btn')
+    
+    promocaoBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const colaboradorId = btn.dataset.colaboradorId
+        const select = this.element.querySelector(`.promocao-select[data-colaborador-id="${colaboradorId}"]`)
+        const novoCargo = select.value
+
+        if (!novoCargo) {
+          toast.error('Selecione um cargo para promover')
+          return
+        }
+
+        await this.promoverColaborador(colaboradorId, novoCargo)
+      })
+    })
+  }
+
+  async promoverColaborador(colaboradorId, novoCargo) {
+    try {
+      // Usar a função SQL personalizada
+      const { data, error } = await supabase
+        .rpc('promover_colaborador', {
+          colaborador_id: colaboradorId,
+          novo_cargo: novoCargo
+        })
+
+      if (error) throw error
+
+      if (data.success) {
+        toast.success(`${data.colaborador} promovido para ${this.formatCargo(data.novo_cargo)} com sucesso!`)
+        await this.loadColaboradores()
+      } else {
+        toast.error(data.error)
+      }
+
+    } catch (error) {
+      console.error('Erro ao promover colaborador:', error)
+      toast.error('Erro ao promover colaborador')
+    }
+  }
+
+  formatCargo(cargo) {
+    const cargos = {
+      estagiario: 'Estagiário',
+      funcionario: 'Funcionário',
+      coordenador: 'Coordenador'
+    }
+    return cargos[cargo] || cargo
+  }
+
+  filterColaboradores() {
+    const filtroCargo = this.element.querySelector('#filtro-cargo')?.value
+    const buscaNome = this.element.querySelector('#busca-nome')?.value.toLowerCase()
+    const cards = this.element.querySelectorAll('.colaborador-card')
+
+    cards.forEach(card => {
+      const cargo = card.dataset.cargo
+      const nome = card.dataset.nome
+
+      const matchCargo = !filtroCargo || cargo === filtroCargo
+      const matchNome = !buscaNome || nome.includes(buscaNome)
+
+      card.style.display = matchCargo && matchNome ? 'block' : 'none'
+    })
+  }
+
+  updateColaboradoresStats(colaboradores) {
+    const stats = {
+      total: colaboradores.length,
+      estagiarios: colaboradores.filter(c => c.cargo === 'estagiario').length,
+      funcionarios: colaboradores.filter(c => c.cargo === 'funcionario').length,
+      coordenadores: colaboradores.filter(c => c.cargo === 'coordenador').length
+    }
+
+    const totalEl = this.element.querySelector('#total-colaboradores')
+    const estagiarios = this.element.querySelector('#total-estagiarios')
+    const funcionarios = this.element.querySelector('#total-funcionarios')
+    const coordenadores = this.element.querySelector('#total-coordenadores')
+
+    if (totalEl) totalEl.textContent = stats.total
+    if (estagiarios) estagiarios.textContent = stats.estagiarios
+    if (funcionarios) funcionarios.textContent = stats.funcionarios
+    if (coordenadores) coordenadores.textContent = stats.coordenadores
+  }
+
+  async saveColaborador(form) {
+    try {
+      const formData = new FormData(form)
+      const dados = Object.fromEntries(formData)
+
+      // Validações
+      if (!dados.nome || !dados.email || !dados.senha) {
+        toast.error('Preencha todos os campos obrigatórios')
+        return
+      }
+
+      if (dados.senha.length < 6) {
+        toast.error('A senha deve ter pelo menos 6 caracteres')
+        return
+      }
+
+      // 1. Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: dados.email,
+        password: dados.senha,
+        options: {
+          data: {
+            name: dados.nome
+          }
+        }
+      })
+
+      if (authError) {
+        console.error('Erro auth:', authError)
+        if (authError.message.includes('already registered')) {
+          toast.error('Este e-mail já está cadastrado')
+        } else {
+          toast.error('Erro ao criar usuário: ' + authError.message)
+        }
+        return
+      }
+
+      // 2. Salvar dados na tabela colaboradores
+      const { error: dbError } = await supabase
+        .from('colaboradores')
+        .insert([{
+          nome: dados.nome,
+          email: dados.email,
+          telefone: dados.telefone || null,
+          cargo: 'estagiario',
+          user_id: authData.user.id,
+          ativo: true
+        }])
+
+      if (dbError) {
+        console.error('Erro DB:', dbError)
+        toast.error('Erro ao salvar dados do colaborador')
+        return
+      }
+
+      toast.success(`Colaborador ${dados.nome} cadastrado com sucesso!`)
+      form.reset()
+
+      // Atualizar listagem se estiver visível
+      const listSection = this.element.querySelector('#colaboradores-list-section')
+      if (listSection && listSection.style.display !== 'none') {
+        await this.loadColaboradores()
+      }
+
+    } catch (error) {
+      console.error('Erro ao cadastrar colaborador:', error)
+      toast.error('Erro inesperado ao cadastrar colaborador')
     }
   }
 

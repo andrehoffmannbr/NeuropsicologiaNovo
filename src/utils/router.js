@@ -10,7 +10,8 @@ export const ROUTES = {
   DOCUMENTS: 'documents',
   FINANCIAL: 'financial',
   INVENTORY: 'inventory',
-  INTERNS: 'interns'
+  INTERNS: 'interns',
+  COLABORADORES: 'colaboradores'
 }
 
 export const ROUTE_PERMISSIONS = {
@@ -23,7 +24,8 @@ export const ROUTE_PERMISSIONS = {
   [ROUTES.DOCUMENTS]: ['documents'],
   [ROUTES.FINANCIAL]: ['coordinator-only'],
   [ROUTES.INVENTORY]: ['coordinator-only'],
-  [ROUTES.INTERNS]: ['coordinator-only']
+  [ROUTES.INTERNS]: ['coordinator-only'],
+  [ROUTES.COLABORADORES]: ['coordinator-only']
 }
 
 class Router {

@@ -139,7 +139,8 @@ export default class Layout {
       { section: 'documents', icon: 'file-text', label: 'Laudos' },
       { section: 'financial', icon: 'dollar-sign', label: 'Financeiro' },
       { section: 'inventory', icon: 'package', label: 'Estoque' },
-      { section: 'interns', icon: 'graduation-cap', label: 'Estagiários' }
+      { section: 'interns', icon: 'graduation-cap', label: 'Estagiários' },
+      { section: 'colaboradores', icon: 'users-cog', label: 'Colaboradores' }
     ]
 
     // Filtrar abas baseado nas permissões
@@ -147,7 +148,7 @@ export default class Layout {
       if (role === 'coordinator') {
         return true // Coordenador vê todas as abas
       } else if (role === 'staff') {
-        return !['financial', 'inventory', 'interns'].includes(tab.section)
+        return !['financial', 'inventory', 'interns', 'colaboradores'].includes(tab.section)
       } else if (role === 'intern') {
         return ['appointments', 'all-clients'].includes(tab.section)
       }

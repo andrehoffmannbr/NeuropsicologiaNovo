@@ -12,6 +12,7 @@ import DocumentsPage from './pages/DocumentsPage.js'
 import FinancialPage from './pages/FinancialPage.js'
 import InventoryPage from './pages/InventoryPage.js'
 import InternsPage from './pages/InternsPage.js'
+import ColaboradoresPage from './pages/ColaboradoresPage.js'
 
 export default class App {
   constructor() {
@@ -37,6 +38,7 @@ export default class App {
     this.pages.set(ROUTES.FINANCIAL, FinancialPage)
     this.pages.set(ROUTES.INVENTORY, InventoryPage)
     this.pages.set(ROUTES.INTERNS, InternsPage)
+    this.pages.set(ROUTES.COLABORADORES, ColaboradoresPage)
   }
 
   // Configurar event listeners
