@@ -45,42 +45,91 @@
     console.log('🚨 TESTE DIRETO NO HTML - FUNCIONANDO!');
     console.log('🚨 Timestamp HTML:', new Date().toLocaleString());
     
-    // Adicionar aba colaboradores diretamente
+    // Função para adicionar aba colaboradores
+    function adicionarAbaColaboradores() {
+      var navTabs = document.querySelector('#nav-tabs');
+      console.log('🚨 Nav tabs encontrado:', navTabs);
+      
+      if (navTabs) {
+        // Verificar se já existe
+        var existingTab = navTabs.querySelector('[data-section="colaboradores"]');
+        if (existingTab) {
+          console.log('🚨 Aba colaboradores já existe, removendo...');
+          existingTab.remove();
+        }
+        
+        // Criar nova aba
+        var colaboradoresTab = document.createElement('button');
+        colaboradoresTab.className = 'nav-tab';
+        colaboradoresTab.setAttribute('data-section', 'colaboradores');
+        colaboradoresTab.style.cssText = `
+          background: #10b981 !important;
+          color: white !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          padding: 8px 16px !important;
+          border: none !important;
+          border-radius: 6px !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
+          cursor: pointer !important;
+          transition: all 0.2s !important;
+          margin-left: 8px !important;
+        `;
+        
+        colaboradoresTab.innerHTML = `
+          <i data-lucide="users-cog" style="width: 16px; height: 16px;"></i>
+          <span class="nav-tab-text">Colaboradores</span>
+        `;
+        
+        // Adicionar evento de clique
+        colaboradoresTab.addEventListener('click', function() {
+          console.log('🚨 Aba colaboradores clicada!');
+          alert('Aba Colaboradores clicada! Funcionalidade em desenvolvimento.');
+        });
+        
+        // Adicionar ao nav
+        navTabs.appendChild(colaboradoresTab);
+        console.log('🚨 ABA COLABORADORES ADICIONADA COM SUCESSO!');
+        
+        // Recriar ícones
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+        
+        // Verificar se foi adicionada
+        setTimeout(function() {
+          var verificacao = document.querySelector('[data-section="colaboradores"]');
+          console.log('🚨 Verificação da aba:', verificacao);
+          if (verificacao) {
+            console.log('🚨 ✅ ABA COLABORADORES CONFIRMADA!');
+          } else {
+            console.log('🚨 ❌ ABA COLABORADORES NÃO ENCONTRADA!');
+          }
+        }, 500);
+        
+        return true;
+      } else {
+        console.log('🚨 Nav tabs não encontrado');
+        return false;
+      }
+    }
+    
+    // Adicionar aba colaboradores quando a página carregar
     window.addEventListener('load', function() {
       console.log('🚨 WINDOW LOAD - Procurando nav-tabs...');
       
       setTimeout(function() {
-        var navTabs = document.querySelector('#nav-tabs');
-        console.log('🚨 Nav tabs encontrado:', navTabs);
-        
-        if (navTabs) {
-          var colaboradoresTab = '<button class="nav-tab" data-section="colaboradores" style="background: #10b981; color: white;"><i data-lucide="users-cog"></i><span class="nav-tab-text">Colaboradores</span></button>';
-          navTabs.insertAdjacentHTML('beforeend', colaboradoresTab);
-          console.log('🚨 ABA COLABORADORES ADICIONADA VIA HTML!');
-          
-          // Tentar recriar ícones
-          if (window.lucide) {
-            window.lucide.createIcons();
-          }
-        } else {
-          console.log('🚨 Nav tabs ainda não encontrado, tentando novamente...');
-          
-          // Tentar novamente em intervalos
+        if (!adicionarAbaColaboradores()) {
+          // Tentar novamente em intervalos se não conseguir
           var tentativas = 0;
           var interval = setInterval(function() {
             tentativas++;
             console.log('🚨 Tentativa', tentativas, '- Procurando nav-tabs...');
             
-            var navTabs = document.querySelector('#nav-tabs');
-            if (navTabs) {
-              var colaboradoresTab = '<button class="nav-tab" data-section="colaboradores" style="background: #10b981; color: white;"><i data-lucide="users-cog"></i><span class="nav-tab-text">Colaboradores</span></button>';
-              navTabs.insertAdjacentHTML('beforeend', colaboradoresTab);
+            if (adicionarAbaColaboradores()) {
               console.log('🚨 ABA COLABORADORES ADICIONADA NA TENTATIVA', tentativas);
-              
-              if (window.lucide) {
-                window.lucide.createIcons();
-              }
-              
               clearInterval(interval);
             } else if (tentativas >= 10) {
               console.log('🚨 Desistindo após 10 tentativas');
@@ -90,6 +139,26 @@
         }
       }, 2000);
     });
+    
+    // Também tentar quando o DOM mudar
+    if (window.MutationObserver) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            for (var i = 0; i < mutation.addedNodes.length; i++) {
+              var node = mutation.addedNodes[i];
+              if (node.nodeType === 1 && (node.id === 'nav-tabs' || node.querySelector('#nav-tabs'))) {
+                console.log('🚨 Nav tabs detectado via MutationObserver');
+                setTimeout(adicionarAbaColaboradores, 500);
+                break;
+              }
+            }
+          }
+        });
+      });
+      
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
   </script>
   
   <style>
