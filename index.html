@@ -68,19 +68,22 @@
           display: flex !important;
           align-items: center !important;
           gap: 8px !important;
-          padding: 8px 16px !important;
+          padding: 8px 12px !important;
           border: none !important;
           border-radius: 6px !important;
-          font-size: 14px !important;
+          font-size: 12px !important;
           font-weight: 500 !important;
           cursor: pointer !important;
           transition: all 0.2s !important;
-          margin-left: 8px !important;
+          margin-left: 4px !important;
+          white-space: nowrap !important;
+          flex-shrink: 0 !important;
+          min-width: auto !important;
         `;
         
         colaboradoresTab.innerHTML = `
-          <i data-lucide="users-cog" style="width: 16px; height: 16px;"></i>
-          <span class="nav-tab-text">Colaboradores</span>
+          <i data-lucide="users-cog" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+          <span class="nav-tab-text" style="font-size: 12px;">Colaboradores</span>
         `;
         
         // Adicionar evento de clique

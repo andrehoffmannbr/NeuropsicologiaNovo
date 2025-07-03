@@ -10,6 +10,8 @@ export default class ColaboradoresPage {
   }
 
   async render(container) {
+    console.log('🔧 COLABORADORES: Renderizando página...');
+    
     // Verificar se usuário está logado
     const currentUser = await authService.getCurrentUser()
     if (!currentUser) {
@@ -30,12 +32,46 @@ export default class ColaboradoresPage {
       return
     }
 
+    // Testar conexão com tabela colaboradores
+    await this.testColaboradoresTable();
+
     this.element = document.createElement('div')
     this.element.className = 'colaboradores-page'
     
     await this.renderContent()
     container.appendChild(this.element)
     await this.loadColaboradores()
+  }
+
+  async testColaboradoresTable() {
+    try {
+      console.log('🔧 COLABORADORES: Testando conexão com tabela colaboradores...');
+      
+      // Teste básico: contar registros
+      const { count, error } = await supabase
+        .from('colaboradores')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error('❌ COLABORADORES: Erro ao acessar tabela:', error);
+        console.error('❌ COLABORADORES: Código:', error.code);
+        console.error('❌ COLABORADORES: Mensagem:', error.message);
+        
+        if (error.code === '42P01') {
+          console.error('❌ COLABORADORES: Tabela não existe!');
+          toast.error('Tabela colaboradores não existe. Execute o script SQL create-colaboradores-table.sql');
+        } else {
+          toast.error('Erro ao acessar tabela colaboradores: ' + error.message);
+        }
+        return false;
+      }
+      
+      console.log('✅ COLABORADORES: Tabela acessível. Total de registros:', count);
+      return true;
+    } catch (error) {
+      console.error('❌ COLABORADORES: Erro inesperado no teste da tabela:', error);
+      return false;
+    }
   }
 
   async checkUserPermissions() {
@@ -236,19 +272,27 @@ export default class ColaboradoresPage {
 
   async cadastrarColaborador(form) {
     try {
+      console.log('🔧 COLABORADORES: Iniciando cadastro...');
+      
       const formData = new FormData(form)
       const dados = Object.fromEntries(formData)
+      
+      console.log('🔧 COLABORADORES: Dados do formulário:', dados);
 
       // Validações
       if (!dados.nome || !dados.email || !dados.senha) {
+        console.log('🔧 COLABORADORES: Validação falhou - campos obrigatórios');
         toast.error('Preencha todos os campos obrigatórios')
         return
       }
 
       if (dados.senha.length < 6) {
+        console.log('🔧 COLABORADORES: Validação falhou - senha muito curta');
         toast.error('A senha deve ter pelo menos 6 caracteres')
         return
       }
+
+      console.log('🔧 COLABORADORES: Criando usuário no Supabase Auth...');
 
       // 1. Criar usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -261,8 +305,10 @@ export default class ColaboradoresPage {
         }
       })
 
+      console.log('🔧 COLABORADORES: Resposta do Auth:', { authData, authError });
+
       if (authError) {
-        console.error('Erro auth:', authError)
+        console.error('❌ COLABORADORES: Erro auth:', authError)
         if (authError.message.includes('already registered')) {
           toast.error('Este e-mail já está cadastrado')
         } else {
@@ -271,55 +317,88 @@ export default class ColaboradoresPage {
         return
       }
 
+      console.log('🔧 COLABORADORES: Usuário criado, salvando na tabela colaboradores...');
+      console.log('🔧 COLABORADORES: User ID:', authData.user.id);
+
       // 2. Salvar dados na tabela colaboradores
-      const { error: dbError } = await supabase
+      const colaboradorData = {
+        nome: dados.nome,
+        email: dados.email,
+        telefone: dados.telefone || null,
+        cargo: 'estagiario',
+        user_id: authData.user.id,
+        ativo: true
+      };
+      
+      console.log('🔧 COLABORADORES: Dados para inserir:', colaboradorData);
+
+      const { data: insertData, error: dbError } = await supabase
         .from('colaboradores')
-        .insert([{
-          nome: dados.nome,
-          email: dados.email,
-          telefone: dados.telefone || null,
-          cargo: 'estagiario',
-          user_id: authData.user.id,
-          ativo: true
-        }])
+        .insert([colaboradorData])
+        .select()
+
+      console.log('🔧 COLABORADORES: Resposta do DB:', { insertData, dbError });
 
       if (dbError) {
-        console.error('Erro DB:', dbError)
-        toast.error('Erro ao salvar dados do colaborador')
+        console.error('❌ COLABORADORES: Erro DB:', dbError)
+        console.error('❌ COLABORADORES: Código do erro:', dbError.code)
+        console.error('❌ COLABORADORES: Mensagem:', dbError.message)
+        console.error('❌ COLABORADORES: Detalhes:', dbError.details)
+        
+        if (dbError.code === '42P01') {
+          toast.error('Tabela colaboradores não existe. Execute o script SQL.')
+        } else if (dbError.code === '23505') {
+          toast.error('E-mail já cadastrado')
+        } else {
+          toast.error('Erro ao salvar dados do colaborador: ' + dbError.message)
+        }
         return
       }
 
+      console.log('🔧 COLABORADORES: Cadastro realizado com sucesso!');
       toast.success(`Colaborador ${dados.nome} cadastrado com sucesso!`)
       form.reset()
 
       // Atualizar listagem se estiver visível
       if (this.element.querySelector('#listagem-section').style.display !== 'none') {
+        console.log('🔧 COLABORADORES: Atualizando listagem...');
         await this.loadColaboradores()
       }
 
     } catch (error) {
-      console.error('Erro ao cadastrar colaborador:', error)
-      toast.error('Erro inesperado ao cadastrar colaborador')
+      console.error('❌ COLABORADORES: Erro inesperado:', error)
+      console.error('❌ COLABORADORES: Stack:', error.stack)
+      toast.error('Erro inesperado ao cadastrar colaborador: ' + error.message)
     }
   }
 
   async loadColaboradores() {
     try {
+      console.log('🔧 COLABORADORES: Carregando lista de colaboradores...');
+      
       const { data: colaboradores, error } = await supabase
         .from('colaboradores')
         .select('*')
         .eq('ativo', true)
         .order('data_cadastro', { ascending: false })
 
-      if (error) throw error
+      console.log('🔧 COLABORADORES: Resposta da consulta:', { colaboradores, error });
 
+      if (error) {
+        console.error('❌ COLABORADORES: Erro ao carregar:', error);
+        console.error('❌ COLABORADORES: Código:', error.code);
+        console.error('❌ COLABORADORES: Mensagem:', error.message);
+        throw error;
+      }
+
+      console.log('🔧 COLABORADORES: Lista carregada com sucesso:', colaboradores?.length, 'itens');
       this.renderColaboradores(colaboradores || [])
       this.updateStats(colaboradores || [])
 
     } catch (error) {
-      console.error('Erro ao carregar colaboradores:', error)
+      console.error('❌ COLABORADORES: Erro inesperado ao carregar:', error)
       this.element.querySelector('#colaboradores-lista').innerHTML = 
-        '<p class="error">Erro ao carregar colaboradores</p>'
+        '<p class="error">Erro ao carregar colaboradores: ' + error.message + '</p>'
     }
   }
 
