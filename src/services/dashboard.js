@@ -80,7 +80,8 @@ class DashboardService {
           *,
           clients (
             name,
-            phone
+            phone,
+            client_id
           )
         `)
         .eq('appointment_date', today)
@@ -88,7 +89,18 @@ class DashboardService {
         .order('appointment_time', { ascending: true })
 
       if (error) throw error
-      return data || []
+      
+      // Transformar dados para incluir client_id e outros campos necessários
+      const formattedData = data?.map(appointment => ({
+        ...appointment,
+        client_name: appointment.clients?.name || 'Nome não encontrado',
+        client_phone: appointment.clients?.phone || '',
+        client_id: appointment.clients?.client_id || '',
+        time: appointment.appointment_time ? appointment.appointment_time.substring(0, 5) : '',
+        type: appointment.appointment_type || 'Consulta'
+      })) || []
+
+      return formattedData
     } catch (error) {
       console.error('Erro ao obter agendamentos de hoje:', error)
       return []

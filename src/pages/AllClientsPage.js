@@ -74,6 +74,17 @@ export default class AllClientsPage {
             </div>
             
             <div class="filter-group">
+              <label for="clientIdSearch">
+                <i data-lucide="hash"></i>
+                Buscar por ID
+              </label>
+              <div class="search-input-wrapper">
+                <input type="text" id="clientIdSearch" placeholder="Digite o ID do cliente (ex: CLIN-0001)">
+                <i data-lucide="hash" class="search-icon"></i>
+              </div>
+            </div>
+            
+            <div class="filter-group">
               <label for="typeFilter">
                 <i data-lucide="users"></i>
                 Tipo de Cliente
@@ -211,6 +222,7 @@ export default class AllClientsPage {
 
   initializeEventListeners() {
     const searchInput = this.element.querySelector('#searchInput')
+    const clientIdSearch = this.element.querySelector('#clientIdSearch')
     const typeFilter = this.element.querySelector('#typeFilter')
     const statusFilter = this.element.querySelector('#statusFilter')
     const dateFilter = this.element.querySelector('#dateFilter')
@@ -218,6 +230,10 @@ export default class AllClientsPage {
 
     // Busca em tempo real
     searchInput.addEventListener('input', () => {
+      this.applyFilters()
+    })
+
+    clientIdSearch.addEventListener('input', () => {
       this.applyFilters()
     })
 
@@ -237,6 +253,7 @@ export default class AllClientsPage {
     // Limpar filtros
     clearFilters.addEventListener('click', () => {
       searchInput.value = ''
+      clientIdSearch.value = ''
       typeFilter.value = ''
       statusFilter.value = ''
       dateFilter.value = ''
@@ -282,6 +299,7 @@ export default class AllClientsPage {
 
   applyFilters() {
     const searchTerm = this.element.querySelector('#searchInput').value.toLowerCase()
+    const clientIdSearch = this.element.querySelector('#clientIdSearch').value.toLowerCase()
     const typeFilter = this.element.querySelector('#typeFilter').value
     const statusFilter = this.element.querySelector('#statusFilter').value
     const dateFilter = this.element.querySelector('#dateFilter').value
@@ -293,11 +311,12 @@ export default class AllClientsPage {
         client.phone?.toLowerCase().includes(searchTerm) ||
         client.email?.toLowerCase().includes(searchTerm)
 
+      const matchesClientId = !clientIdSearch || client.client_id?.toLowerCase().includes(clientIdSearch)
       const matchesType = !typeFilter || client.client_type === typeFilter
       const matchesStatus = !statusFilter || (client.status || 'ativo') === statusFilter
       const matchesDate = this.matchesDateFilter(client.created_at, dateFilter)
 
-      return matchesSearch && matchesType && matchesStatus && matchesDate
+      return matchesSearch && matchesClientId && matchesType && matchesStatus && matchesDate
     })
 
     this.currentPage = 1
@@ -330,6 +349,7 @@ export default class AllClientsPage {
 
   updateFiltersSummary() {
     const searchTerm = this.element.querySelector('#searchInput').value
+    const clientIdSearch = this.element.querySelector('#clientIdSearch').value
     const typeFilter = this.element.querySelector('#typeFilter').value
     const statusFilter = this.element.querySelector('#statusFilter').value
     const dateFilter = this.element.querySelector('#dateFilter').value
@@ -341,6 +361,10 @@ export default class AllClientsPage {
     
     if (searchTerm) {
       activeTags.push(`Busca: "${searchTerm}"`)
+    }
+    
+    if (clientIdSearch) {
+      activeTags.push(`ID: ${clientIdSearch}`)
     }
     
     if (typeFilter) {

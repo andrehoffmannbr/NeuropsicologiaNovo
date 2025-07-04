@@ -39,12 +39,7 @@ export default class DashboardPage {
 
       this.dashboardData = {
         stats,
-        todayAppointments: todayAppointments.map(appointment => ({
-          time: dashboardService.formatTime(appointment.appointment_time),
-          client_name: appointment.clients?.name || 'Nome não encontrado',
-          type: appointment.appointment_type,
-          status: appointment.status
-        })),
+        todayAppointments: todayAppointments, // Usar dados já formatados do serviço
         recentActivities: recentActivities.map(activity => ({
           icon: activity.type === 'cliente' ? 'user-plus' : 'calendar-plus',
           description: activity.description,
@@ -460,18 +455,40 @@ export default class DashboardPage {
           <div class="appointments-list">
             ${this.dashboardData.todayAppointments.length > 0 ? 
               this.dashboardData.todayAppointments.map(appointment => `
-                <div class="appointment-card">
+                <div class="appointment-card" data-appointment-id="${appointment.id}">
                   <div class="appointment-time">${appointment.time}</div>
                   <div class="appointment-info">
                     <h4>${appointment.client_name}</h4>
                     <p>${appointment.type}</p>
+                    ${appointment.client_id ? `<small class="client-id">ID: ${appointment.client_id}</small>` : ''}
                   </div>
                   <div class="appointment-status status-${appointment.status}">
                     ${appointment.status}
                   </div>
                   <div class="appointment-actions">
-                    <button class="btn btn-sm btn-outline">Editar</button>
-                    <button class="btn btn-sm btn-success">Confirmar</button>
+                    ${authService.isCoordinator() ? `
+                      <button class="btn btn-sm btn-outline appointment-edit-btn" data-appointment-id="${appointment.id}" title="Editar Agendamento">
+                        <i data-lucide="edit-2"></i>
+                        Editar
+                      </button>
+                      ${appointment.status !== 'confirmado' ? `
+                        <button class="btn btn-sm btn-success appointment-confirm-btn" data-appointment-id="${appointment.id}" title="Confirmar Agendamento">
+                          <i data-lucide="check"></i>
+                          Confirmar
+                        </button>
+                      ` : `
+                        <button class="btn btn-sm btn-success" disabled title="Já confirmado">
+                          <i data-lucide="check-circle"></i>
+                          Confirmado
+                        </button>
+                      `}
+                      <button class="btn btn-sm btn-danger appointment-delete-btn" data-appointment-id="${appointment.id}" title="Deletar Agendamento">
+                        <i data-lucide="trash-2"></i>
+                        Deletar
+                      </button>
+                    ` : `
+                      <span class="no-permissions">Apenas coordenadores podem gerenciar agendamentos</span>
+                    `}
                   </div>
                 </div>
               `).join('') : 
@@ -486,6 +503,22 @@ export default class DashboardPage {
             <i data-lucide="external-link"></i>
             Abrir Calendário Completo
           </button>
+        </div>
+      </div>
+
+      <!-- Modal de Confirmação para Deletar -->
+      <div class="modal" id="delete-appointment-modal" style="display: none;">
+        <div class="modal-content">
+          <h3>Confirmar Exclusão</h3>
+          <p>Tem certeza que deseja deletar este agendamento? Esta ação não pode ser desfeita.</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" id="cancel-delete-btn">
+              Cancelar
+            </button>
+            <button class="btn btn-danger" id="confirm-delete-btn">
+              Deletar
+            </button>
+          </div>
         </div>
       </div>
     `
@@ -516,6 +549,127 @@ export default class DashboardPage {
       btnFullCalendar.addEventListener('click', () => {
         router.navigateTo(ROUTES.APPOINTMENTS)
       })
+    }
+
+    // Event listeners para os botões de ação dos agendamentos
+    const editButtons = this.element.querySelectorAll('.appointment-edit-btn')
+    const confirmButtons = this.element.querySelectorAll('.appointment-confirm-btn')
+    const deleteButtons = this.element.querySelectorAll('.appointment-delete-btn')
+
+    // Botões de Editar
+    editButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const appointmentId = e.target.closest('.appointment-edit-btn').dataset.appointmentId
+        this.editAppointment(appointmentId)
+      })
+    })
+
+    // Botões de Confirmar
+    confirmButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const appointmentId = e.target.closest('.appointment-confirm-btn').dataset.appointmentId
+        this.confirmAppointment(appointmentId)
+      })
+    })
+
+    // Botões de Deletar
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const appointmentId = e.target.closest('.appointment-delete-btn').dataset.appointmentId
+        this.showDeleteConfirmModal(appointmentId)
+      })
+    })
+
+    // Modal de confirmação de deletar
+    const modal = this.element.querySelector('#delete-appointment-modal')
+    const cancelDeleteBtn = this.element.querySelector('#cancel-delete-btn')
+    const confirmDeleteBtn = this.element.querySelector('#confirm-delete-btn')
+
+    if (cancelDeleteBtn) {
+      cancelDeleteBtn.addEventListener('click', () => {
+        modal.style.display = 'none'
+        this.appointmentToDelete = null
+      })
+    }
+
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', () => {
+        if (this.appointmentToDelete) {
+          this.deleteAppointment(this.appointmentToDelete)
+        }
+      })
+    }
+
+    // Fechar modal ao clicar fora
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none'
+          this.appointmentToDelete = null
+        }
+      })
+    }
+  }
+
+  // Método para editar agendamento
+  editAppointment(appointmentId) {
+    // Redirecionar para a página de agendamentos com o ID para edição
+    router.navigateTo(`${ROUTES.APPOINTMENTS}?edit=${appointmentId}`)
+  }
+
+  // Método para confirmar agendamento
+  async confirmAppointment(appointmentId) {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'confirmado' })
+        .eq('id', appointmentId)
+
+      if (error) throw error
+
+      toast.success('Agendamento confirmado com sucesso!')
+      
+      // Recarregar dados do dashboard
+      await this.loadDashboardData()
+      this.renderAppointmentsSection()
+      
+    } catch (error) {
+      console.error('Erro ao confirmar agendamento:', error)
+      toast.error('Erro ao confirmar agendamento')
+    }
+  }
+
+  // Método para mostrar modal de confirmação de deletar
+  showDeleteConfirmModal(appointmentId) {
+    this.appointmentToDelete = appointmentId
+    const modal = this.element.querySelector('#delete-appointment-modal')
+    modal.style.display = 'flex'
+  }
+
+  // Método para deletar agendamento
+  async deleteAppointment(appointmentId) {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId)
+
+      if (error) throw error
+
+      toast.success('Agendamento deletado com sucesso!')
+      
+      // Fechar modal
+      const modal = this.element.querySelector('#delete-appointment-modal')
+      modal.style.display = 'none'
+      this.appointmentToDelete = null
+      
+      // Recarregar dados do dashboard
+      await this.loadDashboardData()
+      this.renderAppointmentsSection()
+      
+    } catch (error) {
+      console.error('Erro ao deletar agendamento:', error)
+      toast.error('Erro ao deletar agendamento')
     }
   }
 
