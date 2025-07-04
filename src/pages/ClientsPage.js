@@ -491,6 +491,27 @@ export default class ClientsPage {
         </div>
       </div>
 
+      <!-- RESPONSÁVEL FINANCEIRO -->
+      <div class="form-section">
+        <h3>💳 Responsável Financeiro</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="adultFinancialResponsible">Responsável pelo Pagamento</label>
+            <select id="adultFinancialResponsible" name="adultFinancialResponsible">
+              <option value="">Selecione (opcional)</option>
+              <option value="proprio-cliente">O próprio cliente</option>
+              <option value="pai">Pai</option>
+              <option value="mae">Mãe</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group" id="adultOtherResponsibleGroup" style="display: none;">
+            <label for="adultOtherResponsible">Especificar Outro Responsável</label>
+            <input type="text" id="adultOtherResponsible" name="adultOtherResponsible" placeholder="Ex: Tio - João da Silva">
+          </div>
+        </div>
+      </div>
+
       <!-- ENDEREÇO -->
       <div class="form-section">
         <h3>📍 Endereço</h3>
@@ -637,6 +658,39 @@ export default class ClientsPage {
         }
       })
     }
+
+    // Lógica para responsável financeiro de maiores de idade
+    const adultFinancialSelect = this.element.querySelector('#adultFinancialResponsible')
+    const adultOtherGroup = this.element.querySelector('#adultOtherResponsibleGroup')
+    
+    if (adultFinancialSelect && adultOtherGroup) {
+      adultFinancialSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'outro') {
+          adultOtherGroup.style.display = 'block'
+          // Usar timeout para animação suave
+          setTimeout(() => {
+            adultOtherGroup.classList.add('show')
+          }, 10)
+          // Tornar o campo obrigatório quando "Outro" for selecionado
+          const otherInput = adultOtherGroup.querySelector('#adultOtherResponsible')
+          if (otherInput) {
+            otherInput.required = true
+          }
+        } else {
+          adultOtherGroup.classList.remove('show')
+          // Aguardar animação para esconder
+          setTimeout(() => {
+            adultOtherGroup.style.display = 'none'
+          }, 300)
+          // Remover obrigatoriedade quando não for "Outro"
+          const otherInput = adultOtherGroup.querySelector('#adultOtherResponsible')
+          if (otherInput) {
+            otherInput.required = false
+            otherInput.value = '' // Limpar o campo
+          }
+        }
+      })
+    }
   }
 
   async searchCEP(cep) {
@@ -769,7 +823,7 @@ export default class ClientsPage {
       // Dados de adulto
       const adultFields = [
         'cpf', 'rg', 'birthPlace', 'maritalStatus', 'education', 'profession',
-        'emergencyContact', 'emergencyPhone'
+        'emergencyContact', 'emergencyPhone', 'adultFinancialResponsible', 'adultOtherResponsible'
       ]
       
       adultFields.forEach(field => {
@@ -778,6 +832,26 @@ export default class ClientsPage {
           input.value = data[field]
         }
       })
+
+      // Lógica especial para responsável financeiro de adultos
+      const adultFinancialSelect = form.querySelector('#adultFinancialResponsible')
+      const adultOtherGroup = form.querySelector('#adultOtherResponsibleGroup')
+      
+      if (adultFinancialSelect && data.adultFinancialResponsible) {
+        adultFinancialSelect.value = data.adultFinancialResponsible
+        
+        // Mostrar campo "Outro" se necessário
+        if (data.adultFinancialResponsible === 'outro' && adultOtherGroup) {
+          adultOtherGroup.style.display = 'block'
+          setTimeout(() => {
+            adultOtherGroup.classList.add('show')
+          }, 10)
+          const otherInput = adultOtherGroup.querySelector('#adultOtherResponsible')
+          if (otherInput) {
+            otherInput.required = true
+          }
+        }
+      }
     }
   }
 
@@ -834,7 +908,9 @@ export default class ClientsPage {
           education: rawData.education,
           profession: rawData.profession,
           emergency_contact: rawData.emergencyContact,
-          emergency_phone: rawData.emergencyPhone
+          emergency_phone: rawData.emergencyPhone,
+          adult_financial_responsible: rawData.adultFinancialResponsible || null,
+          adult_other_responsible: rawData.adultOtherResponsible || null
         })
       }
 

@@ -25,6 +25,8 @@ ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS birth_place text;
 ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS marital_status text;
 ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS education text;
 ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS profession text;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS adult_financial_responsible text;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS adult_other_responsible text;
 
 -- Tornar CPF opcional (apenas obrigatório para maiores de idade)
 ALTER TABLE public.clients ALTER COLUMN cpf DROP NOT NULL;
@@ -41,6 +43,7 @@ ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_school_type CHECK 
 ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_financial_responsible CHECK (financial_responsible IN ('pai', 'mae', 'ambos', 'outro'));
 ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_marital_status CHECK (marital_status IN ('solteiro', 'casado', 'divorciado', 'viuvo', 'uniao-estavel'));
 ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_education CHECK (education IN ('fundamental-incompleto', 'fundamental-completo', 'medio-incompleto', 'medio-completo', 'superior-incompleto', 'superior-completo', 'pos-graduacao', 'mestrado', 'doutorado'));
+ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_adult_financial_responsible CHECK (adult_financial_responsible IN ('proprio-cliente', 'pai', 'mae', 'outro'));
 
 -- Comentários para documentação
 COMMENT ON COLUMN public.clients.gender IS 'Gênero do cliente';
@@ -62,6 +65,8 @@ COMMENT ON COLUMN public.clients.birth_place IS 'Naturalidade do cliente (maiore
 COMMENT ON COLUMN public.clients.marital_status IS 'Estado civil do cliente (maiores de idade)';
 COMMENT ON COLUMN public.clients.education IS 'Escolaridade do cliente (maiores de idade)';
 COMMENT ON COLUMN public.clients.profession IS 'Profissão do cliente (maiores de idade)';
+COMMENT ON COLUMN public.clients.adult_financial_responsible IS 'Responsável financeiro do cliente maior de idade';
+COMMENT ON COLUMN public.clients.adult_other_responsible IS 'Detalhes do outro responsável financeiro (maiores de idade)';
 
 -- Atualizar a data de modificação
 UPDATE public.clients SET updated_at = now();
