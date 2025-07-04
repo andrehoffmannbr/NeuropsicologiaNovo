@@ -40,7 +40,7 @@ export default class AllClientsPage {
               <i data-lucide="arrow-left"></i>
               Voltar
             </button>
-            <button class="btn btn-primary" onclick="window.location.href='${ROUTES.CLIENTS}'">
+            <button class="btn btn-primary" id="btn-new-client">
               <i data-lucide="user-plus"></i>
               Novo Cliente
             </button>
@@ -152,6 +152,7 @@ export default class AllClientsPage {
           <table class="clients-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Nome</th>
                 <th>CPF</th>
                 <th>Telefone</th>
@@ -171,7 +172,7 @@ export default class AllClientsPage {
             <i data-lucide="users"></i>
             <h3>Nenhum cliente encontrado</h3>
             <p>Não há clientes cadastrados ou nenhum cliente atende aos filtros selecionados.</p>
-            <button class="btn btn-primary" onclick="window.location.href='${ROUTES.CLIENTS}'">
+            <button class="btn btn-primary" id="btn-first-client">
               <i data-lucide="user-plus"></i>
               Cadastrar Primeiro Cliente
             </button>
@@ -242,6 +243,22 @@ export default class AllClientsPage {
       this.applyFilters()
       this.updateFiltersSummary()
     })
+
+    // Botão Novo Cliente
+    const btnNewClient = this.element.querySelector('#btn-new-client')
+    if (btnNewClient) {
+      btnNewClient.addEventListener('click', () => {
+        router.navigateTo(ROUTES.CLIENTS)
+      })
+    }
+
+    // Botão Cadastrar Primeiro Cliente
+    const btnFirstClient = this.element.querySelector('#btn-first-client')
+    if (btnFirstClient) {
+      btnFirstClient.addEventListener('click', () => {
+        router.navigateTo(ROUTES.CLIENTS)
+      })
+    }
   }
 
   async loadClients() {
@@ -378,6 +395,9 @@ export default class AllClientsPage {
     // Renderizar linhas da tabela
     tableBody.innerHTML = paginatedClients.map(client => `
       <tr>
+        <td data-label="ID">
+          <code class="client-id">${client.client_id || '-'}</code>
+        </td>
         <td data-label="Nome">
           <div class="client-info">
             <strong>${client.name}</strong>

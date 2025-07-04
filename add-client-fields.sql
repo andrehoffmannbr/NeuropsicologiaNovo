@@ -3,6 +3,7 @@
 
 -- Adicionar campos comuns
 ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS gender text;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS client_id text;
 
 -- Adicionar campos para menores de idade
 ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS school_name text;
@@ -37,6 +38,9 @@ ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS clients_cpf_key;
 -- Adicionar constraint UNIQUE apenas para CPFs não nulos
 CREATE UNIQUE INDEX IF NOT EXISTS clients_cpf_unique_idx ON public.clients (cpf) WHERE cpf IS NOT NULL;
 
+-- Adicionar índice único para client_id
+CREATE UNIQUE INDEX IF NOT EXISTS clients_client_id_unique_idx ON public.clients (client_id) WHERE client_id IS NOT NULL;
+
 -- Adicionar checks para validação
 ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_gender CHECK (gender IN ('masculino', 'feminino', 'nao-binario', 'prefiro-nao-informar'));
 ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_school_type CHECK (school_type IN ('publica', 'privada', 'tecnica', 'outro'));
@@ -47,6 +51,7 @@ ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_adult_financial_re
 
 -- Comentários para documentação
 COMMENT ON COLUMN public.clients.gender IS 'Gênero do cliente';
+COMMENT ON COLUMN public.clients.client_id IS 'ID único do cliente no formato CLIN-XXXX';
 COMMENT ON COLUMN public.clients.school_name IS 'Nome da escola (menores de idade)';
 COMMENT ON COLUMN public.clients.school_type IS 'Tipo de escola (menores de idade)';
 COMMENT ON COLUMN public.clients.school_grade IS 'Ano escolar (menores de idade)';

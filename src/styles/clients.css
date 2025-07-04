@@ -301,6 +301,17 @@
   font-size: 12px;
 }
 
+.client-id {
+  background: #e2e8f0;
+  color: #334155;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
 /* Badges */
 .badge {
   padding: 4px 8px;

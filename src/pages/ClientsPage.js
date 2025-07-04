@@ -756,6 +756,70 @@ export default class ClientsPage {
     return true
   }
 
+  async checkCPFExists(cpf) {
+    try {
+      // Limpar formatação do CPF
+      const cleanCPF = cpf.replace(/\D/g, '')
+      
+      // Buscar no banco (excluindo o próprio cliente se estiver editando)
+      let query = supabase
+        .from('clients')
+        .select('id')
+        .eq('cpf', cleanCPF)
+        
+      if (this.isEditing && this.clientId) {
+        query = query.neq('id', this.clientId)
+      }
+      
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('Erro ao verificar CPF:', error)
+        return false
+      }
+      
+      return data && data.length > 0
+    } catch (error) {
+      console.error('Erro ao verificar CPF:', error)
+      return false
+    }
+  }
+
+  async generateUniqueClientId() {
+    try {
+      // Buscar o último ID gerado
+      const { data, error } = await supabase
+        .from('clients')
+        .select('client_id')
+        .like('client_id', 'CLIN-%')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (error) {
+        console.error('Erro ao buscar último ID:', error)
+        return 'CLIN-0001'
+      }
+
+      let nextNumber = 1
+      
+      if (data && data.length > 0 && data[0].client_id) {
+        // Extrair número do último ID
+        const lastId = data[0].client_id
+        const lastNumber = parseInt(lastId.replace('CLIN-', ''))
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1
+        }
+      }
+
+      // Formatar com zeros à esquerda (4 dígitos)
+      return `CLIN-${nextNumber.toString().padStart(4, '0')}`
+    } catch (error) {
+      console.error('Erro ao gerar ID único:', error)
+      // Fallback: usar timestamp
+      return `CLIN-${Date.now().toString().slice(-4)}`
+    }
+  }
+
   async loadClientData() {
     try {
       const { data, error } = await supabase
@@ -867,6 +931,15 @@ export default class ClientsPage {
         return
       }
 
+      // Verificar CPF duplicado (apenas para maiores de idade)
+      if (!this.isMinor && rawData.cpf) {
+        const cpfExists = await this.checkCPFExists(rawData.cpf)
+        if (cpfExists) {
+          toast.error('Este CPF já está cadastrado no sistema!')
+          return
+        }
+      }
+
       // Criar objeto de dados do cliente
       const clientData = {
         name: rawData.name,
@@ -878,6 +951,11 @@ export default class ClientsPage {
         // Endereço combinado
         address: this.buildAddress(rawData),
         status: 'ativo'
+      }
+
+      // Gerar ID único apenas para novos clientes
+      if (!this.isEditing) {
+        clientData.client_id = await this.generateUniqueClientId()
       }
 
       // Adicionar campos específicos
