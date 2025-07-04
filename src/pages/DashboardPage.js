@@ -164,24 +164,81 @@ export default class DashboardPage {
       </div>
 
       <div class="dashboard-content">
-        <div class="dashboard-section">
-          <h3>Agendamentos de Hoje</h3>
-          <div class="appointments-list">
-            ${todayAppointments.length > 0 ? 
-              todayAppointments.map(appointment => `
-                <div class="appointment-card">
-                  <div class="appointment-time">${appointment.time}</div>
-                  <div class="appointment-info">
-                    <h4>${appointment.client_name}</h4>
-                    <p>${appointment.type}</p>
-                  </div>
-                  <div class="appointment-status status-${appointment.status}">
-                    ${appointment.status}
-                  </div>
+        <div class="dashboard-section agenda-section">
+          <h3>
+            <i data-lucide="calendar-days"></i>
+            Agenda do Dia
+          </h3>
+          
+          <div class="agenda-container">
+            <div class="mini-calendar">
+              <div class="calendar-header">
+                <button class="calendar-nav" id="prevMonth">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <h4 id="currentMonth">${this.getCurrentMonthName()}</h4>
+                <button class="calendar-nav" id="nextMonth">
+                  <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+              
+              <div class="calendar-grid">
+                <div class="calendar-weekdays">
+                  <span>Dom</span>
+                  <span>Seg</span>
+                  <span>Ter</span>
+                  <span>Qua</span>
+                  <span>Qui</span>
+                  <span>Sex</span>
+                  <span>Sáb</span>
                 </div>
-              `).join('') : 
-              '<p class="no-data">Nenhum agendamento para hoje</p>'
-            }
+                <div class="calendar-days" id="calendarDays">
+                  ${this.generateCalendarDays()}
+                </div>
+              </div>
+            </div>
+            
+            <div class="today-appointments">
+              <div class="appointments-header">
+                <h4>
+                  <i data-lucide="clock"></i>
+                  Hoje, ${new Date().toLocaleDateString('pt-BR', { 
+                    day: 'numeric', 
+                    month: 'long',
+                    weekday: 'long'
+                  })}
+                </h4>
+                <button class="btn btn-outline btn-sm" id="addAppointment">
+                  <i data-lucide="plus"></i>
+                  Agendar
+                </button>
+              </div>
+              
+              <div class="appointments-list">
+                ${todayAppointments.length > 0 ? 
+                  todayAppointments.map(appointment => `
+                    <div class="appointment-card modern">
+                      <div class="appointment-time">
+                        <i data-lucide="clock"></i>
+                        ${appointment.time}
+                      </div>
+                      <div class="appointment-info">
+                        <h5>${appointment.client_name}</h5>
+                        <p>${appointment.type}</p>
+                      </div>
+                      <div class="appointment-status status-${appointment.status}">
+                        ${appointment.status}
+                      </div>
+                    </div>
+                  `).join('') : 
+                  `<div class="no-appointments">
+                    <i data-lucide="calendar-x"></i>
+                    <p>Nenhum agendamento para hoje</p>
+                    <small>Aproveite para organizar sua agenda!</small>
+                  </div>`
+                }
+              </div>
+            </div>
           </div>
         </div>
 
@@ -302,11 +359,19 @@ export default class DashboardPage {
         </div>
 
         <div class="recent-clients">
-          <h3>Clientes Recentes</h3>
-          <p>Para ver todos os clientes, acesse "Todos os pacientes"</p>
-          <button class="btn btn-outline" id="btn-view-all-clients">
-            Ver Todos os Clientes
-          </button>
+          <h3>Gerenciar Clientes</h3>
+          <p>Cadastre novos clientes ou visualize todos os registros</p>
+          
+          <div class="clients-actions">
+            <button class="btn btn-primary" id="btn-new-client-direct">
+              <i data-lucide="user-plus"></i>
+              Cadastrar Cliente
+            </button>
+            <button class="btn btn-outline" id="btn-view-all-clients">
+              <i data-lucide="users"></i>
+              Ver Todos os Clientes
+            </button>
+          </div>
         </div>
       </div>
     `
@@ -316,11 +381,18 @@ export default class DashboardPage {
 
   setupClientsEventListeners() {
     const btnNewClient = this.element.querySelector('#btn-new-client')
+    const btnNewClientDirect = this.element.querySelector('#btn-new-client-direct')
     const btnBackOverview = this.element.querySelector('#btn-back-overview')
     const btnViewAllClients = this.element.querySelector('#btn-view-all-clients')
 
     if (btnNewClient) {
       btnNewClient.addEventListener('click', () => {
+        router.navigateTo(ROUTES.CLIENTS)
+      })
+    }
+
+    if (btnNewClientDirect) {
+      btnNewClientDirect.addEventListener('click', () => {
         router.navigateTo(ROUTES.CLIENTS)
       })
     }
@@ -335,9 +407,7 @@ export default class DashboardPage {
 
     if (btnViewAllClients) {
       btnViewAllClients.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('dashboard-section-change', {
-          detail: { section: 'all-clients' }
-        }))
+        router.navigateTo(ROUTES.ALL_CLIENTS)
       })
     }
   }
@@ -438,62 +508,9 @@ export default class DashboardPage {
   }
 
   renderAllClientsSection() {
-    // Verificar se os dados do dashboard estão carregados
-    if (!this.dashboardData || !this.dashboardData.stats) {
-      this.element.innerHTML = `
-        <div class="dashboard-header">
-          <h2 class="dashboard-title">Todos os Pacientes</h2>
-          <p class="dashboard-subtitle">Carregando dados...</p>
-        </div>
-        <div class="loading-spinner"></div>
-      `
-      return
-    }
-
-    this.element.innerHTML = `
-      <div class="dashboard-header">
-        <h2 class="dashboard-title">Todos os Pacientes</h2>
-        <p class="dashboard-subtitle">Lista completa de clientes</p>
-      </div>
-
-      <div class="all-clients-section">
-        <div class="section-actions">
-          <button class="btn btn-primary" id="btn-new-client-all">
-            <i data-lucide="user-plus"></i>
-            Novo Cliente
-          </button>
-          <button class="btn btn-secondary" id="btn-back-overview-all">
-            <i data-lucide="arrow-left"></i>
-            Voltar ao Dashboard
-          </button>
-        </div>
-
-        <div class="clients-stats">
-          <div class="stat-card">
-            <h3>${this.dashboardData.stats.activeClients}</h3>
-            <p>Total de Clientes</p>
-          </div>
-          <div class="stat-card">
-            <h3>0</h3>
-            <p>Clientes Ativos</p>
-          </div>
-          <div class="stat-card">
-            <h3>0</h3>
-            <p>Novos Este Mês</p>
-          </div>
-        </div>
-
-        <div class="clients-actions">
-          <p>Para gerenciar clientes, utilize as funcionalidades completas:</p>
-          <button class="btn btn-outline" id="btn-open-clients-list">
-            <i data-lucide="external-link"></i>
-            Abrir Lista Completa
-          </button>
-        </div>
-      </div>
-    `
-
-    this.setupAllClientsEventListeners()
+    // Navegar diretamente para a página de todos os clientes
+    // Evita confusão de navegação
+    router.navigateTo(ROUTES.ALL_CLIENTS)
   }
 
   setupAllClientsEventListeners() {
@@ -1159,12 +1176,23 @@ export default class DashboardPage {
             </div>
             <div class="form-row">
               <div class="form-group">
+                <label>Emitido por *</label>
+                <select name="issued_by" id="issued-by-select" required>
+                  <option value="">Selecione um colaborador</option>
+                </select>
+              </div>
+              <div class="form-group">
                 <label>Fornecedor</label>
                 <input type="text" name="supplier">
               </div>
+            </div>
+            <div class="form-row">
               <div class="form-group">
                 <label>Localização</label>
                 <input type="text" name="location">
+              </div>
+              <div class="form-group">
+                <!-- Campo vazio para manter layout -->
               </div>
             </div>
             <div class="form-actions">
@@ -1184,6 +1212,7 @@ export default class DashboardPage {
     `
 
     this.setupInventoryEventListeners()
+    this.loadCollaboradoresForInventory()
   }
 
   setupInventoryEventListeners() {
@@ -1292,10 +1321,43 @@ export default class DashboardPage {
     }
   }
 
+  async loadCollaboradoresForInventory() {
+    try {
+      const { data: colaboradores, error } = await supabase
+        .from('colaboradores')
+        .select('id, nome')
+        .eq('ativo', true)
+        .order('nome')
+
+      if (error) throw error
+
+      const issuedBySelect = this.element.querySelector('#issued-by-select')
+      if (issuedBySelect && colaboradores) {
+        issuedBySelect.innerHTML = '<option value="">Selecione um colaborador</option>'
+        colaboradores.forEach(colaborador => {
+          issuedBySelect.innerHTML += `<option value="${colaborador.id}">${colaborador.nome}</option>`
+        })
+      }
+    } catch (error) {
+      console.error('Erro ao carregar colaboradores para estoque:', error)
+      // Se der erro, pelo menos mostra uma mensagem orientativa
+      const issuedBySelect = this.element.querySelector('#issued-by-select')
+      if (issuedBySelect) {
+        issuedBySelect.innerHTML = '<option value="">Erro ao carregar colaboradores</option>'
+      }
+    }
+  }
+
   async saveInventoryItem(form) {
     try {
       const formData = new FormData(form)
       const itemData = Object.fromEntries(formData)
+      
+      // Validação obrigatória do campo "Emitido por"
+      if (!itemData.issued_by) {
+        toast.error('Por favor, selecione quem está emitindo este item no estoque')
+        return
+      }
       
       // Adicionar dados do usuário logado
       const currentUser = await authService.getCurrentUser()
@@ -1309,6 +1371,8 @@ export default class DashboardPage {
 
       toast.success('Item de estoque salvo com sucesso!')
       form.reset()
+      // Recarregar colaboradores após reset
+      this.loadCollaboradoresForInventory()
       
       // Se estiver na aba de listagem, recarregar os itens
       const tabList = this.element.querySelector('#tab-inventory-list')
@@ -1977,6 +2041,50 @@ export default class DashboardPage {
       console.error('Erro ao cadastrar colaborador:', error)
       toast.error('Erro inesperado ao cadastrar colaborador')
     }
+  }
+
+  getCurrentMonthName() {
+    const now = new Date()
+    return now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  }
+
+  generateCalendarDays() {
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+    const today = now.getDate()
+    
+    // Primeiro dia do mês
+    const firstDay = new Date(currentYear, currentMonth, 1)
+    const lastDay = new Date(currentYear, currentMonth + 1, 0)
+    
+    // Quantos dias tem o mês
+    const daysInMonth = lastDay.getDate()
+    
+    // Que dia da semana começa o mês (0 = domingo)
+    const startDay = firstDay.getDay()
+    
+    let daysHTML = ''
+    
+    // Dias vazios do início
+    for (let i = 0; i < startDay; i++) {
+      daysHTML += '<span class="calendar-day empty"></span>'
+    }
+    
+    // Dias do mês
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isToday = day === today
+      const hasAppointments = false // TODO: Implementar verificação de agendamentos
+      
+      daysHTML += `
+        <span class="calendar-day ${isToday ? 'today' : ''} ${hasAppointments ? 'has-appointments' : ''}" 
+              data-day="${day}">
+          ${day}
+        </span>
+      `
+    }
+    
+    return daysHTML
   }
 
   destroy() {

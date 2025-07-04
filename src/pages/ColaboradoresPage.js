@@ -1,6 +1,6 @@
-import { supabase } from '../config/supabase.js'
-import { authService } from '../services/auth.js'
-import { toast } from '../components/toast.js'
+import supabase from '../config/supabase.js'
+import authService from '../services/auth.js'
+import toast from '../components/toast.js'
 
 export default class ColaboradoresPage {
   constructor() {
@@ -200,7 +200,7 @@ export default class ColaboradoresPage {
           <div class="colaboradores-stats">
             <div class="stat-card">
               <h4 id="total-colaboradores">0</h4>
-              <p>Total</p>
+              <p>Total de Colaboradores</p>
             </div>
             <div class="stat-card">
               <h4 id="total-estagiarios">0</h4>
@@ -388,6 +388,14 @@ export default class ColaboradoresPage {
         console.error('❌ COLABORADORES: Erro ao carregar:', error);
         console.error('❌ COLABORADORES: Código:', error.code);
         console.error('❌ COLABORADORES: Mensagem:', error.message);
+        
+        // Tratamento específico para erro de tabela não encontrada
+        if (error.code === '42P01') {
+          this.renderTableNotFoundError();
+          toast.error('Tabela colaboradores não encontrada! Execute o script SQL primeiro.');
+          return;
+        }
+        
         throw error;
       }
 
@@ -397,8 +405,20 @@ export default class ColaboradoresPage {
 
     } catch (error) {
       console.error('❌ COLABORADORES: Erro inesperado ao carregar:', error)
-      this.element.querySelector('#colaboradores-lista').innerHTML = 
-        '<p class="error">Erro ao carregar colaboradores: ' + error.message + '</p>'
+      
+      const listaElement = this.element.querySelector('#colaboradores-lista');
+      if (listaElement) {
+        listaElement.innerHTML = `
+          <div class="error-container">
+            <div class="error-icon">⚠️</div>
+            <h3>Erro ao Carregar Colaboradores</h3>
+            <p>Detalhes: ${error.message}</p>
+            <button class="btn btn-primary" onclick="window.location.reload()">
+              Tentar Novamente
+            </button>
+          </div>
+        `;
+      }
     }
   }
 
@@ -530,6 +550,40 @@ export default class ColaboradoresPage {
       coordenador: 'Coordenador'
     }
     return cargos[cargo] || cargo
+  }
+
+  renderTableNotFoundError() {
+    const listaElement = this.element.querySelector('#colaboradores-lista');
+    if (listaElement) {
+      listaElement.innerHTML = `
+        <div class="table-not-found-error">
+          <div class="error-icon">🚨</div>
+          <h3>Tabela Colaboradores Não Encontrada</h3>
+          <p>A tabela <code>colaboradores</code> não existe no banco de dados.</p>
+          
+          <div class="solution-steps">
+            <h4>📋 Como Resolver:</h4>
+            <ol>
+              <li>Acesse o <strong>Supabase Dashboard</strong></li>
+              <li>Vá para <strong>SQL Editor</strong></li>
+              <li>Execute o arquivo: <code>create-colaboradores-table.sql</code></li>
+              <li>Recarregue esta página</li>
+            </ol>
+          </div>
+          
+          <div class="sql-file-info">
+            <h4>🔧 Arquivo SQL:</h4>
+            <p>Localize o arquivo <code>create-colaboradores-table.sql</code> na raiz do projeto</p>
+            <p>Copie todo o conteúdo e execute no SQL Editor do Supabase</p>
+          </div>
+          
+          <button class="btn btn-primary" onclick="window.location.reload()">
+            <i data-lucide="refresh-cw"></i>
+            Tentar Novamente
+          </button>
+        </div>
+      `;
+    }
   }
 
   destroy() {

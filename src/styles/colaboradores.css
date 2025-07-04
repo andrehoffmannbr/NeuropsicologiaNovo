@@ -423,4 +423,85 @@
   .form-actions {
     flex-direction: column;
   }
+}
+
+/* ESTILOS PARA MENSAGENS DE ERRO */
+.error-container,
+.table-not-found-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.error-container .error-icon,
+.table-not-found-error .error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error-container h3,
+.table-not-found-error h3 {
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.error-container p,
+.table-not-found-error p {
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.solution-steps {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.solution-steps h4 {
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.solution-steps ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.solution-steps li {
+  margin: 0.5rem 0;
+  color: #374151;
+}
+
+.sql-file-info {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.sql-file-info h4 {
+  color: #1e40af;
+  margin-bottom: 1rem;
+}
+
+.sql-file-info p {
+  color: #1f2937;
+  margin: 0.5rem 0;
+}
+
+.sql-file-info code {
+  background: #dbeafe;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #1e40af;
 } 

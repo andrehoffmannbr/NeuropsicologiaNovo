@@ -18,6 +18,15 @@ export default class AllClientsPage {
     
     this.element.innerHTML = `
       <div class="page-header">
+        <nav class="breadcrumb">
+          <a href="javascript:void(0)" onclick="window.location.href='${ROUTES.DASHBOARD}'">
+            <i data-lucide="home"></i>
+            Dashboard
+          </a>
+          <i data-lucide="chevron-right"></i>
+          <span>Todos os Clientes</span>
+        </nav>
+        
         <div class="header-content">
           <div class="title-section">
             <h1>
@@ -27,6 +36,10 @@ export default class AllClientsPage {
             <p>Visualize e gerencie todos os clientes cadastrados</p>
           </div>
           <div class="header-actions">
+            <button class="btn btn-outline" onclick="window.location.href='${ROUTES.DASHBOARD}'">
+              <i data-lucide="arrow-left"></i>
+              Voltar
+            </button>
             <button class="btn btn-primary" onclick="window.location.href='${ROUTES.CLIENTS}'">
               <i data-lucide="user-plus"></i>
               Novo Cliente
@@ -36,26 +49,72 @@ export default class AllClientsPage {
       </div>
 
       <div class="clients-content">
-        <div class="filters-section">
-          <div class="search-box">
-            <i data-lucide="search"></i>
-            <input type="text" id="searchInput" placeholder="Buscar por nome, CPF, telefone...">
-          </div>
-          <div class="filters">
-            <select id="typeFilter">
-              <option value="">Todos os tipos</option>
-              <option value="adulto">Adulto</option>
-              <option value="menor">Menor de Idade</option>
-            </select>
-            <select id="statusFilter">
-              <option value="">Todos os status</option>
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
-            <button class="btn btn-secondary" id="clearFilters">
+        <div class="modern-filters-section">
+          <div class="filters-header">
+            <h2>
+              <i data-lucide="filter"></i>
+              Filtros e Pesquisa
+            </h2>
+            <button class="btn btn-outline" id="clearFilters">
               <i data-lucide="x"></i>
               Limpar Filtros
             </button>
+          </div>
+          
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label for="searchInput">
+                <i data-lucide="search"></i>
+                Buscar Cliente
+              </label>
+              <div class="search-input-wrapper">
+                <input type="text" id="searchInput" placeholder="Nome, CPF, telefone ou e-mail...">
+                <i data-lucide="search" class="search-icon"></i>
+              </div>
+            </div>
+            
+            <div class="filter-group">
+              <label for="typeFilter">
+                <i data-lucide="users"></i>
+                Tipo de Cliente
+              </label>
+              <select id="typeFilter">
+                <option value="">Todos os tipos</option>
+                <option value="adulto">Adulto</option>
+                <option value="menor">Menor de Idade</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="statusFilter">
+                <i data-lucide="activity"></i>
+                Status
+              </label>
+              <select id="statusFilter">
+                <option value="">Todos os status</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="dateFilter">
+                <i data-lucide="calendar"></i>
+                Período de Cadastro
+              </label>
+              <select id="dateFilter">
+                <option value="">Todos os períodos</option>
+                <option value="today">Hoje</option>
+                <option value="week">Esta semana</option>
+                <option value="month">Este mês</option>
+                <option value="year">Este ano</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="filters-summary" id="filtersSummary" style="display: none;">
+            <span class="summary-text">Filtros aplicados:</span>
+            <div class="filter-tags" id="filterTags"></div>
           </div>
         </div>
 
@@ -153,6 +212,7 @@ export default class AllClientsPage {
     const searchInput = this.element.querySelector('#searchInput')
     const typeFilter = this.element.querySelector('#typeFilter')
     const statusFilter = this.element.querySelector('#statusFilter')
+    const dateFilter = this.element.querySelector('#dateFilter')
     const clearFilters = this.element.querySelector('#clearFilters')
 
     // Busca em tempo real
@@ -169,12 +229,18 @@ export default class AllClientsPage {
       this.applyFilters()
     })
 
+    dateFilter.addEventListener('change', () => {
+      this.applyFilters()
+    })
+
     // Limpar filtros
     clearFilters.addEventListener('click', () => {
       searchInput.value = ''
       typeFilter.value = ''
       statusFilter.value = ''
+      dateFilter.value = ''
       this.applyFilters()
+      this.updateFiltersSummary()
     })
   }
 
@@ -201,6 +267,7 @@ export default class AllClientsPage {
     const searchTerm = this.element.querySelector('#searchInput').value.toLowerCase()
     const typeFilter = this.element.querySelector('#typeFilter').value
     const statusFilter = this.element.querySelector('#statusFilter').value
+    const dateFilter = this.element.querySelector('#dateFilter').value
 
     this.filteredClients = this.clients.filter(client => {
       const matchesSearch = !searchTerm || 
@@ -211,13 +278,82 @@ export default class AllClientsPage {
 
       const matchesType = !typeFilter || client.client_type === typeFilter
       const matchesStatus = !statusFilter || (client.status || 'ativo') === statusFilter
+      const matchesDate = this.matchesDateFilter(client.created_at, dateFilter)
 
-      return matchesSearch && matchesType && matchesStatus
+      return matchesSearch && matchesType && matchesStatus && matchesDate
     })
 
     this.currentPage = 1
     this.renderTable()
     this.updateStats()
+    this.updateFiltersSummary()
+  }
+
+  matchesDateFilter(createdAt, filter) {
+    if (!filter) return true
+    
+    const clientDate = new Date(createdAt)
+    const now = new Date()
+    
+    switch (filter) {
+      case 'today':
+        return clientDate.toDateString() === now.toDateString()
+      case 'week':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        return clientDate >= weekAgo
+      case 'month':
+        return clientDate.getMonth() === now.getMonth() && 
+               clientDate.getFullYear() === now.getFullYear()
+      case 'year':
+        return clientDate.getFullYear() === now.getFullYear()
+      default:
+        return true
+    }
+  }
+
+  updateFiltersSummary() {
+    const searchTerm = this.element.querySelector('#searchInput').value
+    const typeFilter = this.element.querySelector('#typeFilter').value
+    const statusFilter = this.element.querySelector('#statusFilter').value
+    const dateFilter = this.element.querySelector('#dateFilter').value
+    
+    const filtersSummary = this.element.querySelector('#filtersSummary')
+    const filterTags = this.element.querySelector('#filterTags')
+    
+    const activeTags = []
+    
+    if (searchTerm) {
+      activeTags.push(`Busca: "${searchTerm}"`)
+    }
+    
+    if (typeFilter) {
+      const typeLabels = { adulto: 'Adulto', menor: 'Menor de Idade' }
+      activeTags.push(`Tipo: ${typeLabels[typeFilter]}`)
+    }
+    
+    if (statusFilter) {
+      const statusLabels = { ativo: 'Ativo', inativo: 'Inativo' }
+      activeTags.push(`Status: ${statusLabels[statusFilter]}`)
+    }
+    
+    if (dateFilter) {
+      const dateLabels = { 
+        today: 'Hoje', 
+        week: 'Esta semana', 
+        month: 'Este mês', 
+        year: 'Este ano' 
+      }
+      activeTags.push(`Período: ${dateLabels[dateFilter]}`)
+    }
+    
+    if (activeTags.length > 0) {
+      filterTags.innerHTML = activeTags.map(tag => 
+        `<span class="filter-tag">${tag}</span>`
+      ).join('')
+      filtersSummary.style.display = 'block'
+    } else {
+      filtersSummary.style.display = 'none'
+    }
   }
 
   renderTable() {
