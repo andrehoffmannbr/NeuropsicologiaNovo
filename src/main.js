@@ -145,7 +145,7 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('❌ Promise rejeitada:', event.reason)
 })
 
-// Adicionar utilitários globais para desenvolvimento E debug em produção
+// Adicionar utilitários globais para desenvolvimento e debug em produção
 window.authService = authService
 window.router = router
 window.toast = toast 

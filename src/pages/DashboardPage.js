@@ -329,6 +329,18 @@ export default class DashboardPage {
   }
 
   renderClientsSection() {
+    // Verificar se os dados do dashboard estão carregados
+    if (!this.dashboardData || !this.dashboardData.stats) {
+      this.element.innerHTML = `
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Cadastro de Clientes</h2>
+          <p class="dashboard-subtitle">Carregando dados...</p>
+        </div>
+        <div class="loading-spinner"></div>
+      `
+      return
+    }
+
     this.element.innerHTML = `
       <div class="dashboard-header">
         <h2 class="dashboard-title">Cadastro de Clientes</h2>

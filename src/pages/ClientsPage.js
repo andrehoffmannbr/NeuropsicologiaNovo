@@ -331,9 +331,9 @@ export default class ClientsPage {
         <h3>📍 Endereço</h3>
         <div class="form-row">
           <div class="form-group">
-            <label for="cep">CEP *</label>
-            <input type="text" id="cep" name="cep" required placeholder="00000-000" maxlength="9">
-            <small class="field-help">Digite o CEP para preenchimento automático</small>
+            <label for="cep">CEP</label>
+            <input type="text" id="cep" name="cep" placeholder="00000-000" maxlength="9">
+            <small class="field-help">Campo opcional</small>
           </div>
           <div class="form-group">
             <label for="street">Logradouro *</label>
@@ -517,9 +517,9 @@ export default class ClientsPage {
         <h3>📍 Endereço</h3>
         <div class="form-row">
           <div class="form-group">
-            <label for="cep">CEP *</label>
-            <input type="text" id="cep" name="cep" required placeholder="00000-000" maxlength="9">
-            <small class="field-help">Digite o CEP para preenchimento automático</small>
+            <label for="cep">CEP</label>
+            <input type="text" id="cep" name="cep" placeholder="00000-000" maxlength="9">
+            <small class="field-help">Campo opcional</small>
           </div>
           <div class="form-group">
             <label for="street">Logradouro *</label>
@@ -600,14 +600,9 @@ export default class ClientsPage {
   }
 
   initializeDynamicEvents() {
-    // Busca de CEP
+    // Formatação automática do CEP
     const cepInput = this.element.querySelector('#cep')
     if (cepInput) {
-      cepInput.addEventListener('blur', (e) => {
-        this.searchCEP(e.target.value)
-      })
-      
-      // Formatação automática do CEP
       cepInput.addEventListener('input', (e) => {
         let value = e.target.value.replace(/\D/g, '')
         if (value.length >= 5) {
@@ -693,40 +688,7 @@ export default class ClientsPage {
     }
   }
 
-  async searchCEP(cep) {
-    // Limpar formatação do CEP
-    const cleanCep = cep.replace(/\D/g, '')
-    
-    if (cleanCep.length !== 8) {
-      return
-    }
 
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
-      const data = await response.json()
-
-      if (data.erro) {
-        toast.error('CEP não encontrado!')
-        return
-      }
-
-      // Preencher campos automaticamente
-      const streetInput = this.element.querySelector('#street')
-      const neighborhoodInput = this.element.querySelector('#neighborhood')
-      const cityInput = this.element.querySelector('#city')
-      const stateSelect = this.element.querySelector('#state')
-
-      if (streetInput) streetInput.value = data.logradouro || ''
-      if (neighborhoodInput) neighborhoodInput.value = data.bairro || ''
-      if (cityInput) cityInput.value = data.localidade || ''
-      if (stateSelect) stateSelect.value = data.uf || ''
-
-      toast.success('Endereço preenchido automaticamente!')
-    } catch (error) {
-      console.error('Erro ao buscar CEP:', error)
-      toast.error('Erro ao buscar CEP. Verifique a conexão.')
-    }
-  }
 
   validateCPF(cpf) {
     // Remover formatação
