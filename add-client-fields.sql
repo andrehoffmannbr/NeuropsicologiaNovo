@@ -41,13 +41,25 @@ CREATE UNIQUE INDEX IF NOT EXISTS clients_cpf_unique_idx ON public.clients (cpf)
 -- Adicionar índice único para client_id
 CREATE UNIQUE INDEX IF NOT EXISTS clients_client_id_unique_idx ON public.clients (client_id) WHERE client_id IS NOT NULL;
 
--- Adicionar checks para validação
-ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_gender CHECK (gender IN ('masculino', 'feminino', 'nao-binario', 'prefiro-nao-informar'));
-ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_school_type CHECK (school_type IN ('publica', 'privada', 'tecnica', 'outro'));
-ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_financial_responsible CHECK (financial_responsible IN ('pai', 'mae', 'ambos', 'outro'));
-ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_marital_status CHECK (marital_status IN ('solteiro', 'casado', 'divorciado', 'viuvo', 'uniao-estavel'));
-ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_education CHECK (education IN ('fundamental-incompleto', 'fundamental-completo', 'medio-incompleto', 'medio-completo', 'superior-incompleto', 'superior-completo', 'pos-graduacao', 'mestrado', 'doutorado'));
-ALTER TABLE public.clients ADD CONSTRAINT IF NOT EXISTS check_adult_financial_responsible CHECK (adult_financial_responsible IN ('proprio-cliente', 'pai', 'mae', 'outro'));
+-- Adicionar checks para validação (remover constraints existentes primeiro)
+DO $$ 
+BEGIN
+    -- Remover constraints se existirem
+    ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS check_gender;
+    ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS check_school_type;
+    ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS check_financial_responsible;
+    ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS check_marital_status;
+    ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS check_education;
+    ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS check_adult_financial_responsible;
+    
+    -- Adicionar constraints novamente
+    ALTER TABLE public.clients ADD CONSTRAINT check_gender CHECK (gender IN ('masculino', 'feminino', 'nao-binario', 'prefiro-nao-informar'));
+    ALTER TABLE public.clients ADD CONSTRAINT check_school_type CHECK (school_type IN ('publica', 'privada', 'tecnica', 'outro'));
+    ALTER TABLE public.clients ADD CONSTRAINT check_financial_responsible CHECK (financial_responsible IN ('pai', 'mae', 'ambos', 'outro'));
+    ALTER TABLE public.clients ADD CONSTRAINT check_marital_status CHECK (marital_status IN ('solteiro', 'casado', 'divorciado', 'viuvo', 'uniao-estavel'));
+    ALTER TABLE public.clients ADD CONSTRAINT check_education CHECK (education IN ('fundamental-incompleto', 'fundamental-completo', 'medio-incompleto', 'medio-completo', 'superior-incompleto', 'superior-completo', 'pos-graduacao', 'mestrado', 'doutorado'));
+    ALTER TABLE public.clients ADD CONSTRAINT check_adult_financial_responsible CHECK (adult_financial_responsible IN ('proprio-cliente', 'pai', 'mae', 'outro'));
+END $$;
 
 -- Comentários para documentação
 COMMENT ON COLUMN public.clients.gender IS 'Gênero do cliente';
