@@ -14,8 +14,12 @@ export default class LoginPage {
       <div class="login-container">
         <div class="login-card card">
           <div class="card-header text-center">
+            <div class="login-logo">
+              <img src="/img/logologin.jpg" alt="Fundação Dom Bosco" class="login-logo-img">
+            </div>
             <h1 class="card-title">Sistema de Neuropsicologia</h1>
-            <p class="card-subtitle">Faça login para acessar o sistema</p>
+            <p class="card-subtitle">Fundação Dom Bosco</p>
+            <p class="card-description">Faça login para acessar o sistema</p>
           </div>
           <div class="card-body">
             <form id="login-form">
