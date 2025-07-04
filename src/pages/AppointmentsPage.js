@@ -10,6 +10,8 @@ export default class AppointmentsPage {
     this.appointments = []
     this.clients = []
     this.editingAppointment = null
+    this.appointmentToReschedule = null
+    this.appointmentToCancel = null
   }
 
   async render(container) {
@@ -124,6 +126,60 @@ export default class AppointmentsPage {
           </div>
         </div>
       </div>
+
+      <!-- Modal de Redirecionamento -->
+      <div class="modal" id="reschedule-modal" style="display: none;">
+        <div class="modal-content">
+          <h3>Redirecionar Agendamento</h3>
+          <p>Escolha a nova data e horário para o agendamento:</p>
+          <form id="reschedule-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-date">Nova Data *</label>
+                <input type="date" id="new-date" name="new_date" required>
+              </div>
+              <div class="form-group">
+                <label for="new-time">Novo Horário *</label>
+                <input type="time" id="new-time" name="new_time" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="reschedule-reason">Motivo do Redirecionamento</label>
+              <textarea id="reschedule-reason" name="reschedule_reason" rows="3" placeholder="Descreva o motivo do redirecionamento..."></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" id="cancel-reschedule-btn">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Confirmar Redirecionamento
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal de Cancelamento -->
+      <div class="modal" id="cancel-modal" style="display: none;">
+        <div class="modal-content">
+          <h3>Cancelar Agendamento</h3>
+          <p>Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
+          <form id="cancel-form">
+            <div class="form-group">
+              <label for="cancel-reason">Motivo do Cancelamento</label>
+              <textarea id="cancel-reason" name="cancel_reason" rows="3" placeholder="Descreva o motivo do cancelamento..."></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" id="cancel-cancel-btn">
+                Voltar
+              </button>
+              <button type="submit" class="btn btn-danger">
+                Confirmar Cancelamento
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     `
 
     container.appendChild(this.element)
@@ -178,7 +234,8 @@ export default class AppointmentsPage {
           clients (
             name,
             phone,
-            email
+            email,
+            client_id
           )
         `)
         .eq('appointment_date', selectedDate)
@@ -222,6 +279,7 @@ export default class AppointmentsPage {
             ${appointment.room ? `• ${appointment.room}` : ''}
           </p>
           ${appointment.notes ? `<small class="appointment-notes">${appointment.notes}</small>` : ''}
+          ${appointment.clients?.client_id ? `<small class="client-id">ID: ${appointment.clients.client_id}</small>` : ''}
         </div>
         <div class="appointment-status">
           <span class="status-badge status-${appointment.status}">
@@ -229,27 +287,41 @@ export default class AppointmentsPage {
           </span>
         </div>
         <div class="appointment-actions">
-          <button class="btn-icon btn-edit" onclick="window.editAppointment('${appointment.id}')" title="Editar">
-            <i data-lucide="edit-2"></i>
-          </button>
-          <button class="btn-icon btn-success" onclick="window.markAsCompleted('${appointment.id}')" title="Marcar como realizada">
-            <i data-lucide="check"></i>
-          </button>
-          <button class="btn-icon btn-phone" onclick="window.callClient('${appointment.clients?.phone}')" title="Ligar para cliente">
-            <i data-lucide="phone"></i>
-          </button>
-          <button class="btn-icon btn-delete" onclick="window.cancelAppointment('${appointment.id}')" title="Cancelar">
-            <i data-lucide="x"></i>
-          </button>
+          ${authService.isCoordinator() ? `
+            ${appointment.status !== 'confirmado' ? `
+              <button class="btn-icon btn-success" onclick="window.confirmAppointment('${appointment.id}')" title="Confirmar Agendamento">
+                <i data-lucide="check"></i>
+              </button>
+            ` : `
+              <button class="btn-icon btn-success" disabled title="Já confirmado">
+                <i data-lucide="check-circle"></i>
+              </button>
+            `}
+            <button class="btn-icon btn-edit" onclick="window.editAppointment('${appointment.id}')" title="Editar">
+              <i data-lucide="edit-2"></i>
+            </button>
+            <button class="btn-icon btn-warning" onclick="window.rescheduleAppointment('${appointment.id}')" title="Redirecionar">
+              <i data-lucide="calendar-clock"></i>
+            </button>
+            <button class="btn-icon btn-delete" onclick="window.cancelAppointment('${appointment.id}')" title="Cancelar">
+              <i data-lucide="x"></i>
+            </button>
+          ` : `
+            <button class="btn-icon btn-phone" onclick="window.callClient('${appointment.clients?.phone}')" title="Ligar para cliente">
+              <i data-lucide="phone"></i>
+            </button>
+            <span class="permission-note">Apenas coordenadores podem gerenciar agendamentos</span>
+          `}
         </div>
       </div>
     `).join('')
 
     // Configurar métodos globais para os botões
+    window.confirmAppointment = (id) => this.confirmAppointment(id)
     window.editAppointment = (id) => this.editAppointment(id)
-    window.markAsCompleted = (id) => this.markAsCompleted(id)
-    window.callClient = (phone) => this.callClient(phone)
+    window.rescheduleAppointment = (id) => this.rescheduleAppointment(id)
     window.cancelAppointment = (id) => this.cancelAppointment(id)
+    window.callClient = (phone) => this.callClient(phone)
   }
 
   renderAppointmentsError() {
@@ -284,6 +356,9 @@ export default class AppointmentsPage {
 
     // Configurar eventos do calendário
     this.setupCalendarEvents()
+    
+    // Configurar eventos dos modais
+    this.setupModalEvents()
   }
 
   setupCalendarEvents() {
@@ -308,6 +383,53 @@ export default class AppointmentsPage {
         
         // Carregar agendamentos da nova data
         this.loadAppointments()
+      }
+    })
+  }
+
+  setupModalEvents() {
+    // Modal de Redirecionamento
+    const rescheduleModal = this.element.querySelector('#reschedule-modal')
+    const rescheduleForm = this.element.querySelector('#reschedule-form')
+    const cancelRescheduleBtn = this.element.querySelector('#cancel-reschedule-btn')
+
+    rescheduleForm.addEventListener('submit', (e) => {
+      e.preventDefault()
+      this.confirmReschedule()
+    })
+
+    cancelRescheduleBtn.addEventListener('click', () => {
+      rescheduleModal.style.display = 'none'
+      this.appointmentToReschedule = null
+    })
+
+    // Modal de Cancelamento
+    const cancelModal = this.element.querySelector('#cancel-modal')
+    const cancelForm = this.element.querySelector('#cancel-form')
+    const cancelCancelBtn = this.element.querySelector('#cancel-cancel-btn')
+
+    cancelForm.addEventListener('submit', (e) => {
+      e.preventDefault()
+      this.confirmCancelAppointment()
+    })
+
+    cancelCancelBtn.addEventListener('click', () => {
+      cancelModal.style.display = 'none'
+      this.appointmentToCancel = null
+    })
+
+    // Fechar modais ao clicar fora
+    rescheduleModal.addEventListener('click', (e) => {
+      if (e.target === rescheduleModal) {
+        rescheduleModal.style.display = 'none'
+        this.appointmentToReschedule = null
+      }
+    })
+
+    cancelModal.addEventListener('click', (e) => {
+      if (e.target === cancelModal) {
+        cancelModal.style.display = 'none'
+        this.appointmentToCancel = null
       }
     })
   }
@@ -391,20 +513,182 @@ export default class AppointmentsPage {
     }
   }
 
-  async markAsCompleted(appointmentId) {
+  async confirmAppointment(appointmentId) {
+    if (!confirm('Tem certeza que deseja confirmar este agendamento?')) {
+      return
+    }
+
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: 'realizado' })
+        .update({ status: 'confirmado' })
         .eq('id', appointmentId)
 
       if (error) throw error
 
-      toast.success('Consulta marcada como realizada!')
+      toast.success('Agendamento confirmado!')
       await this.loadAppointments()
     } catch (error) {
-      console.error('Erro ao marcar como realizada:', error)
-      toast.error('Erro ao atualizar status')
+      console.error('Erro ao confirmar agendamento:', error)
+      toast.error('Erro ao confirmar agendamento')
+    }
+  }
+
+  async rescheduleAppointment(appointmentId) {
+    this.appointmentToReschedule = appointmentId
+    const appointment = this.appointments.find(a => a.id === appointmentId)
+    
+    if (!appointment) {
+      toast.error('Agendamento não encontrado')
+      return
+    }
+
+    // Preencher dados no modal
+    const newDateInput = this.element.querySelector('#new-date')
+    const newTimeInput = this.element.querySelector('#new-time')
+    
+    // Definir data mínima como hoje
+    const today = new Date().toISOString().split('T')[0]
+    newDateInput.min = today
+    
+    // Preencher com dados atuais
+    newDateInput.value = appointment.appointment_date
+    newTimeInput.value = appointment.appointment_time
+
+    // Mostrar modal
+    const rescheduleModal = this.element.querySelector('#reschedule-modal')
+    rescheduleModal.style.display = 'flex'
+  }
+
+  async confirmReschedule() {
+    if (!this.appointmentToReschedule) return
+
+    try {
+      const form = this.element.querySelector('#reschedule-form')
+      const formData = new FormData(form)
+      const newDate = formData.get('new_date')
+      const newTime = formData.get('new_time')
+      const reason = formData.get('reschedule_reason')
+
+      if (!newDate || !newTime) {
+        toast.error('Preencha a nova data e horário')
+        return
+      }
+
+      // Atualizar agendamento
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({
+          appointment_date: newDate,
+          appointment_time: newTime,
+          notes: reason ? `Redirecionado: ${reason}` : 'Agendamento redirecionado'
+        })
+        .eq('id', this.appointmentToReschedule)
+
+      if (updateError) throw updateError
+
+      // Registrar no histórico
+      await this.registerAppointmentHistory(this.appointmentToReschedule, 'redirecionado', 
+        `Redirecionado de ${this.selectedDate.toLocaleDateString('pt-BR')} para ${new Date(newDate).toLocaleDateString('pt-BR')}. ${reason || ''}`)
+
+      toast.success('Agendamento redirecionado com sucesso!')
+      
+      // Fechar modal
+      const rescheduleModal = this.element.querySelector('#reschedule-modal')
+      rescheduleModal.style.display = 'none'
+      this.appointmentToReschedule = null
+      
+      // Limpar formulário
+      form.reset()
+      
+      // Recarregar agendamentos
+      await this.loadAppointments()
+      
+    } catch (error) {
+      console.error('Erro ao redirecionar agendamento:', error)
+      toast.error('Erro ao redirecionar agendamento')
+    }
+  }
+
+  async cancelAppointment(appointmentId) {
+    this.appointmentToCancel = appointmentId
+    const appointment = this.appointments.find(a => a.id === appointmentId)
+    
+    if (!appointment) {
+      toast.error('Agendamento não encontrado')
+      return
+    }
+
+    // Mostrar modal
+    const cancelModal = this.element.querySelector('#cancel-modal')
+    cancelModal.style.display = 'flex'
+  }
+
+  async confirmCancelAppointment() {
+    if (!this.appointmentToCancel) return
+
+    try {
+      const form = this.element.querySelector('#cancel-form')
+      const formData = new FormData(form)
+      const reason = formData.get('cancel_reason')
+
+      // Registrar no histórico antes de deletar
+      await this.registerAppointmentHistory(this.appointmentToCancel, 'cancelado', 
+        `Agendamento cancelado. ${reason || 'Sem motivo especificado'}`)
+
+      // Deletar agendamento
+      const { error: deleteError } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', this.appointmentToCancel)
+
+      if (deleteError) throw deleteError
+
+      toast.success('Agendamento cancelado com sucesso!')
+      
+      // Fechar modal
+      const cancelModal = this.element.querySelector('#cancel-modal')
+      cancelModal.style.display = 'none'
+      this.appointmentToCancel = null
+      
+      // Limpar formulário
+      form.reset()
+      
+      // Recarregar agendamentos
+      await this.loadAppointments()
+      
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error)
+      toast.error('Erro ao cancelar agendamento')
+    }
+  }
+
+  async registerAppointmentHistory(appointmentId, action, description) {
+    try {
+      const appointment = this.appointments.find(a => a.id === appointmentId)
+      if (!appointment) return
+
+      const currentUser = await authService.getCurrentUser()
+      
+      const historyData = {
+        client_id: appointment.client_id,
+        appointment_id: appointmentId,
+        action: action,
+        description: description,
+        performed_by: currentUser.id,
+        performed_at: new Date().toISOString()
+      }
+
+      // Tentar inserir no histórico (se a tabela existir)
+      const { error } = await supabase
+        .from('appointment_history')
+        .insert([historyData])
+
+      if (error) {
+        console.warn('Tabela de histórico não encontrada, continuando sem registrar:', error)
+      }
+    } catch (error) {
+      console.warn('Erro ao registrar histórico:', error)
     }
   }
 
@@ -413,27 +697,6 @@ export default class AppointmentsPage {
       window.open(`tel:${phone}`)
     } else {
       toast.error('Telefone não disponível')
-    }
-  }
-
-  async cancelAppointment(appointmentId) {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'cancelado' })
-        .eq('id', appointmentId)
-
-      if (error) throw error
-
-      toast.success('Agendamento cancelado!')
-      await this.loadAppointments()
-    } catch (error) {
-      console.error('Erro ao cancelar agendamento:', error)
-      toast.error('Erro ao cancelar agendamento')
     }
   }
 
