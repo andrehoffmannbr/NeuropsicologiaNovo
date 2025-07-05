@@ -3,6 +3,10 @@ import toast from '../components/toast.js'
 import router, { ROUTES } from '../utils/router.js'
 import authService from '../services/auth.js'
 import supabase from '../config/supabase.js'
+import LoadingSkeleton from '../components/LoadingSkeleton.js'
+import { CacheUtils } from '../utils/cache.js'
+import analytics from '../utils/analytics.js'
+import validationManager from '../utils/validation.js'
 
 export default class DashboardPage {
   constructor() {
@@ -30,7 +34,29 @@ export default class DashboardPage {
 
   async loadDashboardData() {
     try {
-      // Carregar dados usando os métodos corretos do dashboardService
+      // 🔄 Mostrar skeleton loading
+      this.showLoadingSkeleton()
+      
+      // 📊 Rastrear início do carregamento
+      const loadStartTime = Date.now()
+      analytics.track('dashboard_load_start', { timestamp: loadStartTime })
+
+      // 🚀 Tentar obter dados do cache primeiro
+      let cachedData = CacheUtils.dashboardStats.get()
+      
+      if (cachedData) {
+        console.log('✅ Dashboard: Dados obtidos do cache')
+        this.dashboardData = cachedData
+        this.renderContent() // Renderizar dados em cache imediatamente
+        
+        // Buscar dados frescos em background
+        this.refreshDataInBackground()
+        return
+      }
+
+      // 🔄 Carregar dados frescos
+      console.log('🔄 Dashboard: Carregando dados frescos...')
+      
       const [stats, todayAppointments, recentActivities] = await Promise.all([
         dashboardService.getStatistics(),
         dashboardService.getTodayAppointments(),
@@ -39,22 +65,118 @@ export default class DashboardPage {
 
       this.dashboardData = {
         stats,
-        todayAppointments: todayAppointments, // Usar dados já formatados do serviço
+        todayAppointments: todayAppointments,
         recentActivities: recentActivities.map(activity => ({
           icon: activity.type === 'cliente' ? 'user-plus' : 'calendar-plus',
           description: activity.description,
           time: dashboardService.formatDate(activity.timestamp)
         }))
       }
+
+      // 💾 Salvar no cache
+      CacheUtils.dashboardStats.set(this.dashboardData)
+
+      // 📊 Rastrear conclusão do carregamento
+      const loadEndTime = Date.now()
+      const loadDuration = loadEndTime - loadStartTime
+      
+      analytics.track('dashboard_load_complete', { 
+        duration: loadDuration,
+        fromCache: false,
+        timestamp: loadEndTime
+      })
+
+      console.log(`✅ Dashboard: Dados carregados em ${loadDuration}ms`)
+
     } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error)
-      toast.error('Erro ao carregar dados do dashboard')
-      this.dashboardData = {
-        stats: { activeClients: 0, todayAppointments: 0, pendingReports: 0, monthlyRevenue: 0 },
-        todayAppointments: [],
-        recentActivities: []
+      console.error('❌ Dashboard: Erro ao carregar dados:', error)
+      
+      // 📊 Rastrear erro
+      analytics.track('dashboard_load_error', { 
+        error: error.message,
+        timestamp: Date.now()
+      })
+
+      // 🔄 Tentar dados do cache como fallback
+      const fallbackData = CacheUtils.dashboardStats.get()
+      if (fallbackData) {
+        console.log('⚠️ Dashboard: Usando dados do cache como fallback')
+        this.dashboardData = fallbackData
+        toast.error('Erro ao carregar dados. Exibindo dados em cache.')
+      } else {
+        // Dados padrão como último recurso
+        console.log('⚠️ Dashboard: Usando dados padrão')
+        this.dashboardData = {
+          stats: { activeClients: 0, todayAppointments: 0, pendingReports: 0, monthlyRevenue: 0 },
+          todayAppointments: [],
+          recentActivities: []
+        }
+        toast.error('Erro ao carregar dados do dashboard')
       }
     }
+  }
+
+  // 🔄 Atualizar dados em background
+  async refreshDataInBackground() {
+    try {
+      console.log('🔄 Dashboard: Atualizando dados em background...')
+      
+      const [stats, todayAppointments, recentActivities] = await Promise.all([
+        dashboardService.getStatistics(),
+        dashboardService.getTodayAppointments(),
+        dashboardService.getRecentActivities()
+      ])
+
+      const freshData = {
+        stats,
+        todayAppointments: todayAppointments,
+        recentActivities: recentActivities.map(activity => ({
+          icon: activity.type === 'cliente' ? 'user-plus' : 'calendar-plus',
+          description: activity.description,
+          time: dashboardService.formatDate(activity.timestamp)
+        }))
+      }
+
+      // Verificar se dados mudaram
+      const hasChanges = JSON.stringify(this.dashboardData) !== JSON.stringify(freshData)
+      
+      if (hasChanges) {
+        console.log('🔄 Dashboard: Dados atualizados encontrados')
+        this.dashboardData = freshData
+        CacheUtils.dashboardStats.set(this.dashboardData)
+        
+        // Re-renderizar apenas se na seção overview
+        if (this.currentSection === 'overview') {
+          this.renderContent()
+        }
+        
+        toast.success('Dados atualizados!')
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Dashboard: Erro na atualização em background:', error)
+    }
+  }
+
+  // 🎨 Mostrar skeleton loading
+  showLoadingSkeleton() {
+    if (!this.element) return
+
+    this.element.innerHTML = `
+      <div class="dashboard-header">
+        <div class="skeleton-line" style="width: 200px; height: 32px; margin-bottom: 8px;"></div>
+        <div class="skeleton-line" style="width: 150px; height: 16px;"></div>
+      </div>
+
+      ${LoadingSkeleton.createStatsSkeleton()}
+
+      <div class="dashboard-content" style="margin-top: 24px;">
+        <div class="dashboard-section" style="margin-bottom: 24px;">
+          <div class="skeleton-line" style="width: 150px; height: 20px; margin-bottom: 16px;"></div>
+          ${LoadingSkeleton.createCardSkeleton(3)}
+        </div>
+      </div>
+    `
   }
 
   renderContent() {

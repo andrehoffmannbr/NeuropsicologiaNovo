@@ -305,6 +305,15 @@ class Main {
       // 🔧 CORREÇÃO: Expor utilitários globais
       this.exposeGlobalUtils()
 
+      // 🚀 Registrar Service Worker
+      await this.registerServiceWorker()
+
+      // 🏥 Iniciar Health Check
+      await this.initializeHealthCheck()
+
+      // 🔄 Pré-carregar páginas críticas
+      await this.preloadCriticalPages()
+
       // 🔧 CORREÇÃO: Log de sucesso
       console.log('🎉 Main: Sistema totalmente inicializado!')
       
@@ -434,6 +443,91 @@ class Main {
 
     } catch (error) {
       console.error('❌ Main: Erro ao expor utilitários:', error)
+    }
+  }
+
+  // 🚀 Registrar Service Worker
+  async registerServiceWorker() {
+    try {
+      if (!('serviceWorker' in navigator)) {
+        console.log('⚠️ Main: Service Worker não suportado neste navegador')
+        return
+      }
+
+      console.log('🔄 Main: Registrando Service Worker...')
+      
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      
+      console.log('✅ Main: Service Worker registrado:', registration.scope)
+      
+      // Escutar atualizações
+      registration.addEventListener('updatefound', () => {
+        console.log('🔄 Main: Nova versão do Service Worker disponível')
+        
+        const newWorker = registration.installing
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('✅ Main: Nova versão instalada, recarregue para aplicar')
+            
+            if (window.toast) {
+              window.toast.info('Nova versão disponível! Recarregue a página para aplicar.', 10000)
+            }
+          }
+        })
+      })
+
+    } catch (error) {
+      console.error('❌ Main: Erro ao registrar Service Worker:', error)
+      // Não falhar se service worker der problema
+    }
+  }
+
+  // 🏥 Inicializar Health Check
+  async initializeHealthCheck() {
+    try {
+      console.log('🔄 Main: Inicializando Health Check...')
+      
+      const { default: healthCheck } = await import('./utils/healthCheck.js')
+      
+      // Executar check inicial
+      const initialReport = await healthCheck.runAllChecks()
+      console.log('✅ Main: Health Check inicial:', initialReport.status)
+      
+      // Iniciar monitoramento automático
+      healthCheck.startMonitoring()
+      
+      // Expor globalmente
+      window.healthCheck = healthCheck
+      
+    } catch (error) {
+      console.error('❌ Main: Erro ao inicializar Health Check:', error)
+      // Não falhar se health check der problema
+    }
+  }
+
+  // 🔄 Pré-carregar páginas críticas
+  async preloadCriticalPages() {
+    try {
+      console.log('🔄 Main: Pré-carregando páginas críticas...')
+      
+      const { default: lazyLoader } = await import('./utils/lazyLoader.js')
+      
+      // Pré-carregar páginas críticas em background
+      setTimeout(async () => {
+        try {
+          await lazyLoader.preloadCriticalPages()
+          console.log('✅ Main: Páginas críticas pré-carregadas')
+        } catch (error) {
+          console.warn('⚠️ Main: Erro no pré-carregamento:', error)
+        }
+      }, 2000) // Aguardar 2 segundos para não interferir na inicialização
+      
+      // Expor globalmente
+      window.lazyLoader = lazyLoader
+      
+    } catch (error) {
+      console.error('❌ Main: Erro ao configurar lazy loader:', error)
+      // Não falhar se lazy loader der problema
     }
   }
 
