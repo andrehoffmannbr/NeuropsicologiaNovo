@@ -7,6 +7,8 @@
 @import './colaboradores.css';
 @import './prontuario.css';
 @import './meus-clientes.css';
+@import './protected-routes.css';
+@import './admin-panel.css';
 
 /* ===== RESET E VARIABLES ===== */
 :root {

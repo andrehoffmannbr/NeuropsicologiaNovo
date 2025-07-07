@@ -7,6 +7,7 @@ export const ROUTES = {
   APPOINTMENTS: 'appointments',
   ALL_CLIENTS: 'all-clients',
   MEUS_CLIENTES: 'meus-clientes',
+  ADMIN_PANEL: 'admin-panel',
   CLIENT_REPORTS: 'client-reports',
   DOCUMENTS: 'documents',
   FINANCIAL: 'financial',

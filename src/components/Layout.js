@@ -246,6 +246,7 @@ export default class Layout {
     if (userNameEl) userNameEl.textContent = `(${userName})`
     if (userRoleEl) {
       const roleLabels = {
+        admin: 'Administrador',
         coordenador: 'Coordenador',
         funcionario: 'Funcionário', 
         estagiario: 'Estagiário'
@@ -367,19 +368,23 @@ export default class Layout {
       { section: 'financial', icon: 'dollar-sign', label: 'Financeiro' },
       { section: 'inventory', icon: 'package', label: 'Estoque' },
       { section: 'interns', icon: 'graduation-cap', label: 'Estagiários' },
-      { section: 'colaboradores', icon: 'users-cog', label: 'Colaboradores' }
+      { section: 'colaboradores', icon: 'users-cog', label: 'Colaboradores' },
+      { section: 'admin-panel', icon: 'settings', label: 'Admin' }
     ]
 
     console.log('🔧 DEBUG Layout - Todas as tabs:', allTabs);
 
     // Filtrar abas baseado nas permissões por role
     const filteredTabs = allTabs.filter(tab => {
-      if (role === 'coordenador') {
+      if (role === 'admin') {
+        // Admins veem tudo, exceto "Meus Clientes"
+        return tab.section !== 'meus-clientes'
+      } else if (role === 'coordenador') {
         // Coordenadores veem tudo, exceto "Meus Clientes"
         return tab.section !== 'meus-clientes'
       } else if (role === 'funcionario') {
-        // Funcionários não veem: financeiro, estoque, estagiários, colaboradores, meus clientes
-        return !['financial', 'inventory', 'interns', 'colaboradores', 'meus-clientes'].includes(tab.section)
+        // Funcionários não veem: financeiro, estoque, estagiários, colaboradores, meus clientes, admin
+        return !['financial', 'inventory', 'interns', 'colaboradores', 'meus-clientes', 'admin-panel'].includes(tab.section)
       } else if (role === 'estagiario') {
         // Estagiários só veem: cadastrar cliente, agendar paciente, meus clientes
         return ['clients', 'appointments', 'meus-clientes'].includes(tab.section)
