@@ -494,5 +494,4 @@ if (typeof window !== 'undefined') {
   window.businessAnalytics = BusinessAnalytics
 }
 
-export default analytics
-export { BusinessAnalytics } 
+export default analytics 
