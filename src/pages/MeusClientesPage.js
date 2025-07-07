@@ -1,5 +1,5 @@
 import supabase from '../config/supabase.js'
-import { authService } from '../services/auth.js'
+import authService from '../services/auth.js'
 import { router, ROUTES } from '../utils/router.js'
 import { toast } from '../components/toast.js'
 
