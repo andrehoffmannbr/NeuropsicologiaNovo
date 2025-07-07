@@ -95,6 +95,9 @@ export default class DashboardPage {
       case 'prontuario':
         this.renderProntuarioSection()
         break
+      case 'meus-clientes':
+        this.renderMeusClientesSection()
+        break
     }
   }
 
@@ -2282,6 +2285,118 @@ export default class DashboardPage {
   renderProntuarioSection() {
     // Redirecionar para a página dedicada do prontuário
     router.navigateTo(ROUTES.PRONTUARIO)
+  }
+
+  renderMeusClientesSection() {
+    this.element.innerHTML = `
+      <div class="section-header">
+        <button class="btn btn-outline" id="btn-back-overview-meus-clientes">
+          <i data-lucide="arrow-left"></i>
+          Voltar
+        </button>
+        <h2>Meus Clientes</h2>
+        <p>Visualize e gerencie apenas os clientes vinculados a você</p>
+      </div>
+
+      <div class="meus-clientes-container">
+        <div class="quick-actions">
+          <div class="action-card">
+            <div class="action-icon">
+              <i data-lucide="user-plus"></i>
+            </div>
+            <div class="action-content">
+              <h3>Cadastrar Novo Cliente</h3>
+              <p>Adicione um novo cliente ao seu atendimento</p>
+              <button class="btn btn-primary" onclick="router.navigateTo('${ROUTES.CLIENTS}')">
+                <i data-lucide="user-plus"></i>
+                Cadastrar Cliente
+              </button>
+            </div>
+          </div>
+
+          <div class="action-card">
+            <div class="action-icon">
+              <i data-lucide="calendar-plus"></i>
+            </div>
+            <div class="action-content">
+              <h3>Agendar Consulta</h3>
+              <p>Agende consultas para seus clientes</p>
+              <button class="btn btn-primary" onclick="router.navigateTo('${ROUTES.APPOINTMENTS}')">
+                <i data-lucide="calendar-plus"></i>
+                Agendar
+              </button>
+            </div>
+          </div>
+
+          <div class="action-card">
+            <div class="action-icon">
+              <i data-lucide="user-heart"></i>
+            </div>
+            <div class="action-content">
+              <h3>Ver Meus Clientes</h3>
+              <p>Visualize todos os clientes vinculados a você</p>
+              <button class="btn btn-primary" id="btn-view-meus-clientes">
+                <i data-lucide="user-heart"></i>
+                Ver Clientes
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-estagiario">
+          <div class="info-card">
+            <h3>Como Funciona o Sistema para Estagiários</h3>
+            <div class="permissions-info">
+              <div class="permission-item">
+                <i data-lucide="check" class="permission-icon allowed"></i>
+                <span>Cadastrar novos clientes</span>
+              </div>
+              <div class="permission-item">
+                <i data-lucide="check" class="permission-icon allowed"></i>
+                <span>Agendar consultas para seus clientes</span>
+              </div>
+              <div class="permission-item">
+                <i data-lucide="check" class="permission-icon allowed"></i>
+                <span>Ver e editar apenas seus clientes</span>
+              </div>
+              <div class="permission-item">
+                <i data-lucide="x" class="permission-icon denied"></i>
+                <span>Ver clientes de outros estagiários</span>
+              </div>
+              <div class="permission-item">
+                <i data-lucide="x" class="permission-icon denied"></i>
+                <span>Acessar financeiro ou relatórios gerais</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+
+    // Adicionar event listeners
+    const btnBack = this.element.querySelector('#btn-back-overview-meus-clientes')
+    if (btnBack) {
+      btnBack.addEventListener('click', () => {
+        this.currentSection = 'overview'
+        this.renderContent()
+      })
+    }
+
+    const btnViewMeusClientes = this.element.querySelector('#btn-view-meus-clientes')
+    if (btnViewMeusClientes) {
+      btnViewMeusClientes.addEventListener('click', () => {
+        // Criar instância da página MeusClientesPage
+        import('../pages/MeusClientesPage.js').then(module => {
+          const MeusClientesPage = module.default
+          const page = new MeusClientesPage()
+          const mainContent = document.querySelector('#main-content')
+          if (mainContent) {
+            mainContent.innerHTML = ''
+            page.render(mainContent)
+          }
+        })
+      })
+    }
   }
 
   destroy() {

@@ -14,6 +14,7 @@ import InventoryPage from './pages/InventoryPage.js'
 import InternsPage from './pages/InternsPage.js'
 import ColaboradoresPage from './pages/ColaboradoresPage.js'
 import ProntuarioPage from './pages/ProntuarioPage.js'
+import MeusClientesPage from './pages/MeusClientesPage.js'
 
 export default class App {
   constructor() {
@@ -41,6 +42,7 @@ export default class App {
       this.pages.set(ROUTES.CLIENTS, ClientsPage)
       this.pages.set(ROUTES.APPOINTMENTS, AppointmentsPage)
       this.pages.set(ROUTES.ALL_CLIENTS, AllClientsPage)
+      this.pages.set(ROUTES.MEUS_CLIENTES, MeusClientesPage)
       this.pages.set(ROUTES.CLIENT_REPORTS, ClientReportsPage)
       this.pages.set(ROUTES.DOCUMENTS, DocumentsPage)
       this.pages.set(ROUTES.FINANCIAL, FinancialPage)

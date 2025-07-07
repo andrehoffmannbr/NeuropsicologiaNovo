@@ -246,9 +246,9 @@ export default class Layout {
     if (userNameEl) userNameEl.textContent = `(${userName})`
     if (userRoleEl) {
       const roleLabels = {
-        coordinator: 'Coordenador',
-        staff: 'Funcionário', 
-        intern: 'Estagiário'
+        coordenador: 'Coordenador',
+        funcionario: 'Funcionário', 
+        estagiario: 'Estagiário'
       }
       userRoleEl.textContent = roleLabels[userRole] || 'Usuário'
     }
@@ -358,10 +358,11 @@ export default class Layout {
     
     const allTabs = [
       { section: 'clients', icon: 'user-plus', label: 'Cadastrar Cliente' },
-      { section: 'appointments', icon: 'calendar', label: 'Agenda do Dia' },
-      { section: 'all-clients', icon: 'users', label: 'Todos os pacientes' },
+      { section: 'appointments', icon: 'calendar', label: 'Agendar Paciente' },
+      { section: 'meus-clientes', icon: 'user-heart', label: 'Meus Clientes' },
+      { section: 'all-clients', icon: 'users', label: 'Todos os Clientes' },
       { section: 'prontuario', icon: 'file-text', label: 'Prontuário' },
-      { section: 'reports', icon: 'bar-chart-3', label: 'Relatório de Clientes' },
+      { section: 'reports', icon: 'bar-chart-3', label: 'Relatórios' },
       { section: 'documents', icon: 'file-text', label: 'Laudos' },
       { section: 'financial', icon: 'dollar-sign', label: 'Financeiro' },
       { section: 'inventory', icon: 'package', label: 'Estoque' },
@@ -371,20 +372,17 @@ export default class Layout {
 
     console.log('🔧 DEBUG Layout - Todas as tabs:', allTabs);
 
-    // TEMPORÁRIO: Forçar exibição de todas as abas para debug
-    if (role === 'coordinator' || role === 'staff' || role === 'intern' || !role) {
-      console.log('🔧 DEBUG Layout - Mostrando todas as abas (DEBUG MODE)');
-      return allTabs; // Mostrar todas as abas temporariamente
-    }
-
-    // Filtrar abas baseado nas permissões (código original)
+    // Filtrar abas baseado nas permissões por role
     const filteredTabs = allTabs.filter(tab => {
-      if (role === 'coordinator') {
-        return true // Coordenador vê todas as abas
-      } else if (role === 'staff') {
-        return !['financial', 'inventory', 'interns', 'colaboradores'].includes(tab.section)
-      } else if (role === 'intern') {
-        return ['appointments', 'all-clients'].includes(tab.section)
+      if (role === 'coordenador') {
+        // Coordenadores veem tudo, exceto "Meus Clientes"
+        return tab.section !== 'meus-clientes'
+      } else if (role === 'funcionario') {
+        // Funcionários não veem: financeiro, estoque, estagiários, colaboradores, meus clientes
+        return !['financial', 'inventory', 'interns', 'colaboradores', 'meus-clientes'].includes(tab.section)
+      } else if (role === 'estagiario') {
+        // Estagiários só veem: cadastrar cliente, agendar paciente, meus clientes
+        return ['clients', 'appointments', 'meus-clientes'].includes(tab.section)
       }
       return false
     });

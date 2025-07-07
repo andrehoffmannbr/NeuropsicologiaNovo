@@ -1,9 +1,9 @@
 import supabase from '../config/supabase.js'
 
 export const ROLES = {
-  COORDINATOR: 'coordinator',
-  STAFF: 'staff',
-  INTERN: 'intern'
+  COORDINATOR: 'coordenador',
+  STAFF: 'funcionario', 
+  INTERN: 'estagiario'
 }
 
 export const PERMISSIONS = {
