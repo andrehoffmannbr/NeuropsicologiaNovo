@@ -280,20 +280,88 @@ export default class AllClientsPage {
 
   async loadClients() {
     try {
-      const { data, error } = await supabase
+      // Verificar se o usuário está autenticado
+      const session = await supabase.auth.getSession()
+      if (!session?.data?.session) {
+        router.navigateTo(ROUTES.LOGIN)
+        return
+      }
+
+      // Mostrar loading state
+      const tableBody = this.element.querySelector('#clientsTableBody')
+      if (tableBody) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="9" class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>Carregando clientes...</p>
+            </td>
+          </tr>
+        `
+      }
+
+      // Fazer a consulta com paginação no servidor e seleção específica de campos
+      const { data, error, count } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+          id,
+          client_id,
+          name,
+          email,
+          cpf,
+          phone,
+          client_type,
+          birth_date,
+          status,
+          created_at
+        `, { count: 'exact' })
         .order('created_at', { ascending: false })
+        .range(0, 49) // Limitar a 50 registros por vez
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro detalhado:', error)
+        throw error
+      }
 
+      // Garantir que temos um array mesmo se não houver dados
       this.clients = data || []
       this.filteredClients = [...this.clients]
+      
+      // Atualizar a interface
       this.renderTable()
       this.updateStats()
+
     } catch (error) {
       console.error('Erro ao carregar clientes:', error)
-      toast.error('Erro ao carregar clientes')
+      
+      // Mostrar mensagem de erro mais específica
+      if (error.message?.includes('JWT')) {
+        toast.error('Sessão expirada. Por favor, faça login novamente.')
+        router.navigateTo(ROUTES.LOGIN)
+      } else if (error.code === 'PGRST116') {
+        toast.error('Erro de permissão. Verifique suas credenciais.')
+      } else {
+        toast.error('Erro ao carregar clientes. Tente novamente mais tarde.')
+      }
+
+      // Mostrar estado vazio com mensagem de erro
+      const tableBody = this.element.querySelector('#clientsTableBody')
+      const emptyState = this.element.querySelector('#emptyState')
+      const table = this.element.querySelector('.clients-table')
+      
+      if (tableBody && emptyState && table) {
+        table.style.display = 'none'
+        emptyState.style.display = 'block'
+        emptyState.innerHTML = `
+          <i data-lucide="alert-triangle"></i>
+          <h3>Erro ao carregar clientes</h3>
+          <p>Não foi possível carregar a lista de clientes. Tente novamente mais tarde.</p>
+          <button class="btn btn-primary" onclick="window.location.reload()">
+            <i data-lucide="refresh-cw"></i>
+            Tentar Novamente
+          </button>
+        `
+      }
     }
   }
 

@@ -13,6 +13,8 @@ import FinancialPage from './pages/FinancialPage.js'
 import InventoryPage from './pages/InventoryPage.js'
 import InternsPage from './pages/InternsPage.js'
 import ColaboradoresPage from './pages/ColaboradoresPage.js'
+import ProntuarioPage from './pages/ProntuarioPage.js'
+import MeusClientesPage from './pages/MeusClientesPage.js'
 
 export default class App {
   constructor() {
@@ -40,12 +42,14 @@ export default class App {
       this.pages.set(ROUTES.CLIENTS, ClientsPage)
       this.pages.set(ROUTES.APPOINTMENTS, AppointmentsPage)
       this.pages.set(ROUTES.ALL_CLIENTS, AllClientsPage)
+      this.pages.set(ROUTES.MEUS_CLIENTES, MeusClientesPage)
       this.pages.set(ROUTES.CLIENT_REPORTS, ClientReportsPage)
       this.pages.set(ROUTES.DOCUMENTS, DocumentsPage)
       this.pages.set(ROUTES.FINANCIAL, FinancialPage)
       this.pages.set(ROUTES.INVENTORY, InventoryPage)
       this.pages.set(ROUTES.INTERNS, InternsPage)
       this.pages.set(ROUTES.COLABORADORES, ColaboradoresPage)
+      this.pages.set(ROUTES.PRONTUARIO, ProntuarioPage)
       
       console.log('✅ App: Páginas inicializadas:', Array.from(this.pages.keys()))
     } catch (error) {

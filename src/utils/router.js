@@ -6,12 +6,14 @@ export const ROUTES = {
   CLIENTS: 'clients',
   APPOINTMENTS: 'appointments',
   ALL_CLIENTS: 'all-clients',
+  MEUS_CLIENTES: 'meus-clientes',
   CLIENT_REPORTS: 'client-reports',
   DOCUMENTS: 'documents',
   FINANCIAL: 'financial',
   INVENTORY: 'inventory',
   INTERNS: 'interns',
-  COLABORADORES: 'colaboradores'
+  COLABORADORES: 'colaboradores',
+  PRONTUARIO: 'prontuario'
 }
 
 export const ROUTE_PERMISSIONS = {
@@ -20,12 +22,14 @@ export const ROUTE_PERMISSIONS = {
   [ROUTES.CLIENTS]: ['clients'],
   [ROUTES.APPOINTMENTS]: ['appointments', 'own-appointments'],
   [ROUTES.ALL_CLIENTS]: ['clients'],
+  [ROUTES.MEUS_CLIENTES]: ['own-clients'],
   [ROUTES.CLIENT_REPORTS]: ['reports'],
   [ROUTES.DOCUMENTS]: ['documents'],
   [ROUTES.FINANCIAL]: ['coordinator-only'],
   [ROUTES.INVENTORY]: ['coordinator-only'],
   [ROUTES.INTERNS]: ['coordinator-only'],
-  [ROUTES.COLABORADORES]: ['coordinator-only']
+  [ROUTES.COLABORADORES]: ['coordinator-only'],
+  [ROUTES.PRONTUARIO]: ['clients', 'reports']
 }
 
 class Router {
