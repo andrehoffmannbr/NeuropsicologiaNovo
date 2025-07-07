@@ -92,6 +92,9 @@ export default class DashboardPage {
       case 'colaboradores':
         this.renderColaboradoresSection()
         break
+      case 'prontuario':
+        this.renderProntuarioSection()
+        break
     }
   }
 
@@ -860,11 +863,21 @@ export default class DashboardPage {
   }
 
   setupDocumentsEventListeners() {
+    console.log('🔧 DEBUG: setupDocumentsEventListeners chamado')
+    
     const btnBackOverview = this.element.querySelector('#btn-back-overview-documents')
     const form = this.element.querySelector('#reports-form')
     const clearBtn = this.element.querySelector('#clear-reports-form')
     const tabForm = this.element.querySelector('#tab-reports-form')
     const tabList = this.element.querySelector('#tab-reports-list')
+
+    console.log('🔧 DEBUG: Elementos encontrados:', {
+      btnBackOverview: !!btnBackOverview,
+      form: !!form,
+      clearBtn: !!clearBtn,
+      tabForm: !!tabForm,
+      tabList: !!tabList
+    })
 
     if (btnBackOverview) {
       btnBackOverview.addEventListener('click', () => {
@@ -875,10 +888,14 @@ export default class DashboardPage {
     }
 
     if (form) {
+      console.log('🔧 DEBUG: Adicionando event listener ao formulário')
       form.addEventListener('submit', (e) => {
+        console.log('🔧 DEBUG: Formulário submetido!')
         e.preventDefault()
         this.saveReport(form)
       })
+    } else {
+      console.error('❌ DEBUG: Formulário #reports-form não encontrado!')
     }
 
     if (clearBtn) {
@@ -987,20 +1004,29 @@ export default class DashboardPage {
   }
 
   async saveReport(form) {
+    console.log('🔧 DEBUG: saveReport chamado')
     try {
       const formData = new FormData(form)
       const reportData = Object.fromEntries(formData)
+      console.log('🔧 DEBUG: Dados do formulário:', reportData)
       
       // Adicionar dados do usuário logado
       const currentUser = await authService.getCurrentUser()
+      console.log('🔧 DEBUG: Usuário atual:', currentUser)
       reportData.created_by = currentUser.id
+      
+      console.log('🔧 DEBUG: Dados finais para inserir:', reportData)
       
       const { error } = await supabase
         .from('reports')
         .insert([reportData])
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ DEBUG: Erro do Supabase:', error)
+        throw error
+      }
 
+      console.log('✅ DEBUG: Laudo salvo com sucesso!')
       toast.success('Laudo salvo com sucesso!')
       form.reset()
       
@@ -1010,8 +1036,8 @@ export default class DashboardPage {
         this.loadReports()
       }
     } catch (error) {
-      console.error('Erro ao salvar laudo:', error)
-      toast.error('Erro ao salvar laudo')
+      console.error('❌ DEBUG: Erro ao salvar laudo:', error)
+      toast.error('Erro ao salvar laudo: ' + error.message)
     }
   }
 
@@ -2251,6 +2277,11 @@ export default class DashboardPage {
     }
     
     return daysHTML
+  }
+
+  renderProntuarioSection() {
+    // Redirecionar para a página dedicada do prontuário
+    router.navigateTo(ROUTES.PRONTUARIO)
   }
 
   destroy() {

@@ -271,31 +271,142 @@ export default class ColaboradoresPage {
   }
 
   async cadastrarColaborador(form) {
+    console.log('🔧 COLABORADORES: Iniciando cadastro...');
+    console.log('🔧 COLABORADORES: Supabase configurado:', !!supabase);
+    console.log('🔧 COLABORADORES: URL do Supabase:', supabase.supabaseUrl);
+    
     try {
-      console.log('🔧 COLABORADORES: Iniciando cadastro...');
-      
+      // 1. Validar dados do formulário
       const formData = new FormData(form)
       const dados = Object.fromEntries(formData)
-      
       console.log('🔧 COLABORADORES: Dados do formulário:', dados);
 
-      // Validações
+      // Validações básicas
       if (!dados.nome || !dados.email || !dados.senha) {
         console.log('🔧 COLABORADORES: Validação falhou - campos obrigatórios');
-        toast.error('Preencha todos os campos obrigatórios')
-        return
+        toast.error('Preencha todos os campos obrigatórios (nome, email e senha)');
+        return;
       }
 
       if (dados.senha.length < 6) {
         console.log('🔧 COLABORADORES: Validação falhou - senha muito curta');
-        toast.error('A senha deve ter pelo menos 6 caracteres')
-        return
+        toast.error('A senha deve ter no mínimo 6 caracteres');
+        return;
       }
 
-      console.log('🔧 COLABORADORES: Criando usuário no Supabase Auth...');
+      // 2. NOVO: Primeiro tentar inserir na tabela SEM Auth (para teste)
+      console.log('🔧 COLABORADORES: Tentando inserção direta na tabela (sem Auth)...');
+      
+      const colaboradorDataDirect = {
+        nome: dados.nome,
+        email: dados.email,
+        telefone: dados.telefone || null,
+        cargo: 'estagiario',
+        user_id: null, // Temporariamente sem user_id
+        ativo: true
+      };
 
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      console.log('🔧 COLABORADORES: Dados para inserção direta:', colaboradorDataDirect);
+
+      const { data: directInsert, error: directError } = await supabase
+        .from('colaboradores')
+        .insert([colaboradorDataDirect])
+        .select();
+
+      console.log('🔧 COLABORADORES: Resultado da inserção direta:', { directInsert, directError });
+
+      if (directError) {
+        console.error('❌ COLABORADORES: Erro na inserção direta:', directError);
+        
+        if (directError.code === '23505') {
+          toast.error('Este e-mail já está cadastrado como colaborador');
+        } else if (directError.code === '42P01') {
+          toast.error('Tabela colaboradores não existe');
+        } else {
+          toast.error(`Erro na inserção direta: ${directError.message}`);
+        }
+        return;
+      }
+
+      if (directInsert && directInsert.length > 0) {
+        console.log('✅ COLABORADORES: Inserção direta funcionou! ID:', directInsert[0].id);
+        
+        // 3. Agora tentar criar o usuário no Auth
+        console.log('🔧 COLABORADORES: Tentando criar usuário no Auth...');
+        
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: dados.email,
+          password: dados.senha,
+          options: {
+            data: {
+              name: dados.nome
+            }
+          }
+        });
+
+        console.log('🔧 COLABORADORES: Resposta do Auth:', { authData, authError });
+
+        if (authError) {
+          console.error('❌ COLABORADORES: Erro no Auth, mas colaborador já foi salvo:', authError);
+          
+          // Atualizar mensagem para o usuário
+          if (authError.message.includes('already registered')) {
+            toast.warning(`Colaborador ${dados.nome} salvo, mas e-mail já existe no sistema de login`);
+          } else {
+            toast.warning(`Colaborador ${dados.nome} salvo, mas houve problema no sistema de login: ${authError.message}`);
+          }
+        } else if (authData?.user?.id) {
+          console.log('✅ COLABORADORES: Auth funcionou! Atualizando user_id...');
+          
+          // Atualizar o registro com o user_id
+          const { error: updateError } = await supabase
+            .from('colaboradores')
+            .update({ user_id: authData.user.id })
+            .eq('id', directInsert[0].id);
+
+          if (updateError) {
+            console.error('❌ COLABORADORES: Erro ao atualizar user_id:', updateError);
+            toast.warning(`Colaborador ${dados.nome} salvo, mas não foi possível vincular ao sistema de login`);
+          } else {
+            console.log('✅ COLABORADORES: User_id atualizado com sucesso!');
+            toast.success(`Colaborador ${dados.nome} cadastrado com sucesso!`);
+          }
+        }
+        
+        // Limpar formulário
+        form.reset();
+        
+        // Recarregar lista
+        console.log('🔧 COLABORADORES: Recarregando lista...');
+        await this.loadColaboradores();
+        
+        return;
+      }
+
+      // 4. FALLBACK: Método original (se inserção direta falhar)
+      console.log('🔧 COLABORADORES: Fallback - tentando método original...');
+      
+      // Verificar se já existe um usuário com este email
+      console.log('🔧 COLABORADORES: Verificando se email já existe na tabela colaboradores...');
+      
+      const { data: existingColaborador, error: checkError } = await supabase
+        .from('colaboradores')
+        .select('email')
+        .eq('email', dados.email)
+        .single();
+
+      console.log('🔧 COLABORADORES: Verificação de email existente:', { existingColaborador, checkError });
+
+      if (existingColaborador) {
+        console.log('🔧 COLABORADORES: Email já existe na tabela colaboradores');
+        toast.error('Este e-mail já está cadastrado como colaborador');
+        return;
+      }
+
+      // Criar usuário no Supabase Auth
+      console.log('🔧 COLABORADORES: Tentando criar usuário no Supabase Auth...');
+      
+      const authPayload = {
         email: dados.email,
         password: dados.senha,
         options: {
@@ -303,24 +414,43 @@ export default class ColaboradoresPage {
             name: dados.nome
           }
         }
-      })
+      };
 
-      console.log('🔧 COLABORADORES: Resposta do Auth:', { authData, authError });
+      console.log('🔧 COLABORADORES: Payload para Auth:', authPayload);
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp(authPayload);
+
+      console.log('🔧 COLABORADORES: Resposta completa do Auth:', { authData, authError });
 
       if (authError) {
-        console.error('❌ COLABORADORES: Erro auth:', authError)
+        console.error('❌ COLABORADORES: Erro auth detalhado:', authError);
+        
+        // Mensagens mais específicas baseadas no tipo de erro
         if (authError.message.includes('already registered')) {
-          toast.error('Este e-mail já está cadastrado')
+          toast.error('Este e-mail já está cadastrado no sistema');
+        } else if (authError.message.includes('Invalid email')) {
+          toast.error('E-mail inválido');
+        } else if (authError.message.includes('Password')) {
+          toast.error('Senha inválida - deve ter pelo menos 6 caracteres');
+        } else if (authError.message.includes('rate limit')) {
+          toast.error('Muitas tentativas. Aguarde alguns minutos e tente novamente');
+        } else if (authError.status === 422) {
+          toast.error('Dados inválidos para cadastro');
         } else {
-          toast.error('Erro ao criar usuário: ' + authError.message)
+          toast.error(`Erro ao criar usuário: ${authError.message}`);
         }
-        return
+        return;
       }
 
-      console.log('🔧 COLABORADORES: Usuário criado, salvando na tabela colaboradores...');
-      console.log('🔧 COLABORADORES: User ID:', authData.user.id);
+      if (!authData?.user?.id) {
+        console.error('❌ COLABORADORES: Usuário não foi criado corretamente');
+        toast.error('Erro: usuário não foi criado no sistema de autenticação');
+        return;
+      }
 
-      // 2. Salvar dados na tabela colaboradores
+      console.log('✅ COLABORADORES: Usuário criado com sucesso no Auth!');
+      
+      // Salvar dados na tabela colaboradores
       const colaboradorData = {
         nome: dados.nome,
         email: dados.email,
@@ -329,46 +459,42 @@ export default class ColaboradoresPage {
         user_id: authData.user.id,
         ativo: true
       };
-      
-      console.log('🔧 COLABORADORES: Dados para inserir:', colaboradorData);
+
+      console.log('🔧 COLABORADORES: Dados para inserir na tabela:', colaboradorData);
 
       const { data: insertData, error: dbError } = await supabase
         .from('colaboradores')
         .insert([colaboradorData])
-        .select()
+        .select();
 
-      console.log('🔧 COLABORADORES: Resposta do DB:', { insertData, dbError });
+      console.log('🔧 COLABORADORES: Resposta da inserção no DB:', { insertData, dbError });
 
       if (dbError) {
-        console.error('❌ COLABORADORES: Erro DB:', dbError)
-        console.error('❌ COLABORADORES: Código do erro:', dbError.code)
-        console.error('❌ COLABORADORES: Mensagem:', dbError.message)
-        console.error('❌ COLABORADORES: Detalhes:', dbError.details)
-        
-        if (dbError.code === '42P01') {
-          toast.error('Tabela colaboradores não existe. Execute o script SQL.')
-        } else if (dbError.code === '23505') {
-          toast.error('E-mail já cadastrado')
-        } else {
-          toast.error('Erro ao salvar dados do colaborador: ' + dbError.message)
-        }
-        return
+        console.error('❌ COLABORADORES: Erro DB detalhado:', dbError);
+        toast.error(`Erro ao salvar colaborador: ${dbError.message}`);
+        return;
       }
 
-      console.log('🔧 COLABORADORES: Cadastro realizado com sucesso!');
-      toast.success(`Colaborador ${dados.nome} cadastrado com sucesso!`)
-      form.reset()
-
-      // Atualizar listagem se estiver visível
-      if (this.element.querySelector('#listagem-section').style.display !== 'none') {
-        console.log('🔧 COLABORADORES: Atualizando listagem...');
-        await this.loadColaboradores()
-      }
+      console.log('✅ COLABORADORES: Dados salvos na tabela com sucesso!');
+      toast.success(`Colaborador ${dados.nome} cadastrado com sucesso como estagiário!`);
+      
+      // Limpar formulário
+      form.reset();
+      
+      console.log('🔧 COLABORADORES: Recarregando lista de colaboradores...');
+      await this.loadColaboradores();
 
     } catch (error) {
-      console.error('❌ COLABORADORES: Erro inesperado:', error)
-      console.error('❌ COLABORADORES: Stack:', error.stack)
-      toast.error('Erro inesperado ao cadastrar colaborador: ' + error.message)
+      console.error('❌ COLABORADORES: Erro inesperado completo:', error);
+      console.error('❌ COLABORADORES: Erro stack:', error.stack);
+      
+      if (error.name === 'NetworkError') {
+        toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+      } else if (error.name === 'TypeError') {
+        toast.error('Erro de configuração. Verifique a configuração do Supabase.');
+      } else {
+        toast.error('Erro inesperado ao cadastrar colaborador: ' + error.message);
+      }
     }
   }
 

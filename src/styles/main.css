@@ -5,6 +5,7 @@
 @import './appointments.css';
 @import './clients.css';
 @import './colaboradores.css';
+@import './prontuario.css';
 
 /* ===== RESET E VARIABLES ===== */
 :root {

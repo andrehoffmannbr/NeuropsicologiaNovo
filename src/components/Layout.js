@@ -360,6 +360,7 @@ export default class Layout {
       { section: 'clients', icon: 'user-plus', label: 'Cadastrar Cliente' },
       { section: 'appointments', icon: 'calendar', label: 'Agenda do Dia' },
       { section: 'all-clients', icon: 'users', label: 'Todos os pacientes' },
+      { section: 'prontuario', icon: 'file-text', label: 'Prontuário' },
       { section: 'reports', icon: 'bar-chart-3', label: 'Relatório de Clientes' },
       { section: 'documents', icon: 'file-text', label: 'Laudos' },
       { section: 'financial', icon: 'dollar-sign', label: 'Financeiro' },
